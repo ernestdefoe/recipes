@@ -11,6 +11,8 @@ and [Scribe](https://github.com/ernestdefoe/scribe).
 [![Flarum](https://img.shields.io/badge/Flarum-2.0-orange)](https://flarum.org)
 [![Licence](https://img.shields.io/badge/licence-MIT-blue)](LICENSE)
 
+![A recipe card on a dark theme](.github/screenshots/card.png)
+
 ---
 
 ## What readers get
@@ -28,6 +30,12 @@ and [Scribe](https://github.com/ernestdefoe/scribe).
 - **Everything without JavaScript, too.** The card is server-rendered HTML, so
   emails, feed readers and search engines see the whole recipe.
 
+![Doubled to 8 servings with a timer running](.github/screenshots/scaled-and-timer.png)
+
+| On a phone | Printed |
+|---|---|
+| <img src=".github/screenshots/mobile.png" width="300" alt="The card on a phone"> | <img src=".github/screenshots/print.png" width="420" alt="The print view"> |
+
 ## What authors get
 
 A **Recipe** button in the composer opens a form: title, servings, prep and cook
@@ -43,6 +51,10 @@ and delete; double-click it, or press **Edit**, to change it. In the plain
 composer, put the cursor inside a recipe and press the button to edit it.
 
 The composer preview shows the card as you type.
+
+| The form | In Scribe |
+|---|---|
+| <img src=".github/screenshots/form.png" width="380" alt="The recipe form"> | <img src=".github/screenshots/scribe-editor.png" width="520" alt="A recipe block in Scribe"> |
 
 ### Writing one by hand
 
