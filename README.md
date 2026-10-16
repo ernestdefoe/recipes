@@ -128,6 +128,12 @@ php flarum cache:clear
 - Flarum 2.0
 - PHP 8.3+
 
+## Support
+
+- **Support forum:** [Recipes on ernestdefoe.online](https://ernestdefoe.online/d/144)
+- **Flarum community:** [Recipes on discuss.flarum.org](https://discuss.flarum.org/d/40100)
+- **Bug reports:** [GitHub issues](https://github.com/ernestdefoe/recipes/issues)
+
 ## Licence
 
 MIT.
