@@ -13,6 +13,9 @@
   line-height: 1.55;
 }
 
+// Through .Post-body: themes cap `.Post-body img` at 100%, which left a gap
+// beside the photo on the right.
+.Post-body .Recipe-image,
 .Recipe-image {
   display: block;
   width: calc(100% + 44px);
@@ -105,7 +108,8 @@
 .Recipe-description {
   margin: 14px 0 0;
   white-space: pre-line;
-  color: var(--muted-color-dark, var(--muted-color));
+  // Not --muted-color-dark: dark themes leave it dark, and the text vanished.
+  color: var(--muted-color);
 }
 
 .Recipe-section {
