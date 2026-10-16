@@ -11,7 +11,7 @@ and [Scribe](https://github.com/ernestdefoe/scribe).
 [![Flarum](https://img.shields.io/badge/Flarum-2.0-orange)](https://flarum.org)
 [![Licence](https://img.shields.io/badge/licence-MIT-blue)](LICENSE)
 
-![A recipe card on a dark theme](.github/screenshots/card.png)
+![A recipe card on the default Flarum theme](.github/screenshots/card.png)
 
 ---
 
