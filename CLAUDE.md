@@ -16,6 +16,11 @@
 - The registry hands over a module's default export (the class), not a namespace.
 - The composer preview is drawn by `data-s9e-livepreview-onrender`, synchronously, before s9e's diff. Keep `preview.ts` synchronous.
 - JSON-LD: only a `Recipe`, only the first post, visibility via `whereVisibleTo`. No query when the page's own first post has no card.
+- `recipe_cards` is an INDEX, never the source: rows are rebuilt from the post on Posted/Revised (`Index\KeepIndexCurrent`) and backfilled by migration / `recipes:reindex`. Where a recipe lives (discussion, number, author) is joined from `posts` at read time, and who may see it is `Post::whereVisibleTo()` at read time (`Index\RecipeQuery`). Never store or trust visibility in the index.
+- Constructor dependencies are REQUIRED. Laravel's container fills `?Foo $x = null` with null, which silently broke the based-on URL and JSON-LD `isBasedOn` in the first build.
+- Variants store `based-on: <post id>`. The card links through `/recipes/from/{id}`, which resolves visibility as the visitor; `forum/related.ts` names the original and lists variants with ONE request per page.
+- Remix rebuilds the text from the rendered card (data attributes carry raw times and the original's id), so anyone may remix what they can read. Its code is a lazy chunk fetched on click.
+- `flarum.reg.asyncModuleImport` takes ONE path string (`flarum/forum/components/X`), not namespace + id.
 - forum.js loads on every page. The card, the form and the preview are lazy chunks with namespaced ids.
 
 ## Testing

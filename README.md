@@ -36,6 +36,27 @@ and [Scribe](https://github.com/ernestdefoe/scribe).
 |---|---|
 | <img src=".github/screenshots/mobile.png" width="300" alt="The card on a phone"> | <img src=".github/screenshots/print.png" width="420" alt="The print view"> |
 
+## A recipe directory
+
+**Recipes** in the sidebar opens a page listing every recipe on the forum as a
+card: photo, title, author, servings and time, linked to the post it lives in.
+Search it by name or filter it by tag. It lists only recipes the visitor is
+allowed to see, and the server sends it as plain links too, for search engines
+and readers without JavaScript.
+
+![The recipe directory](.github/screenshots/directory.png)
+
+## Variants
+
+Every recipe card has a **Remix** button. It opens the recipe form with a copy
+of the recipe to change, as a reply in the same discussion (the usual "I made it
+vegan" case) or as a discussion of its own. The new card says which recipe it is
+**based on**, with a link back, and the original lists its **variants**
+underneath, so you can follow the branches either way. Search engines get the
+link too, as schema.org `isBasedOn`.
+
+![An original with its variants, and a variant naming its original](.github/screenshots/variants.png)
+
 ## What authors get
 
 A **Recipe** button in the composer opens a form: title, servings, prep and cook
@@ -84,6 +105,9 @@ Cook each side [2m] until golden.
 [/recipe]
 ```
 
+A variant adds `based-on: 123`, the post id of the original. Remix writes it
+for you.
+
 Recipe text is plain text: Markdown and BBCode inside a recipe are shown as
 written.
 
@@ -105,6 +129,15 @@ php flarum cache:clear
 ```
 
 Enable **Recipes** in the admin panel. There are no settings.
+
+Recipes keeps a small index of where recipes are, so the directory and variant
+links never have to read every post. It is filled when the extension is enabled
+and kept current as posts are written, edited and deleted. If you ever restore
+posts from a backup or import them with a tool that bypasses Flarum, rebuild it:
+
+```bash
+php flarum recipes:reindex
+```
 
 With Scribe, the button joins the toolbar on its own unless you have arranged
 the toolbar by hand. Then it waits in the toolbar builder for you to place it.
