@@ -3,6 +3,7 @@
 namespace ErnestDefoe\Recipes\Formatter;
 
 use ErnestDefoe\Recipes\Recipe;
+use Flarum\Http\UrlGenerator;
 use Psr\Http\Message\ServerRequestInterface;
 use s9e\TextFormatter\Renderer;
 
@@ -18,7 +19,12 @@ use s9e\TextFormatter\Renderer;
  */
 class Render
 {
-    public function __construct(private readonly Labels $labels)
+    /*
+     * 🚨 Required, not `?UrlGenerator $url = null`: Laravel's container fills an
+     * optional class parameter with its default, so a nullable here was null
+     * on every real forum and the link ignored a subfolder install.
+     */
+    public function __construct(private readonly Labels $labels, private readonly UrlGenerator $url)
     {
     }
 
@@ -79,6 +85,16 @@ class Render
                 $element->setAttribute($key, $this->duration($seconds));
                 $element->setAttribute('l_'.$key, $this->t($key));
             }
+        }
+        foreach (['prep_s' => $recipe->prep, 'cook_s' => $recipe->cook] as $key => $seconds) {
+            if ($seconds !== null) {
+                $element->setAttribute($key, (string) $seconds);
+            }
+        }
+        if ($recipe->basedOn !== null) {
+            $element->setAttribute('based_on', (string) $recipe->basedOn);
+            $element->setAttribute('based_on_url', $this->url->to('forum')->route('recipes.from', ['id' => $recipe->basedOn]));
+            $element->setAttribute('l_based_on', $this->t('based_on'));
         }
         // A total is only news when it adds two things up.
         if ($recipe->prep !== null && $recipe->cook !== null) {

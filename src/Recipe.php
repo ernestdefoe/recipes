@@ -11,6 +11,7 @@ namespace ErnestDefoe\Recipes;
  *     prep: 10m
  *     cook: 20m
  *     image: https://example.com/pancakes.jpg
+ *     based-on: 123                  ← a variant: the post id of the original
  *
  *     A weekend breakfast that takes less time than the coffee.
  *
@@ -55,12 +56,13 @@ final class Recipe
         public readonly string $description,
         public readonly array $ingredients,
         public readonly array $steps,
+        public readonly ?int $basedOn = null,
     ) {
     }
 
     public static function parse(string $body): self
     {
-        $meta = ['title' => '', 'servings' => null, 'prep' => null, 'cook' => null, 'image' => null];
+        $meta = ['title' => '', 'servings' => null, 'prep' => null, 'cook' => null, 'image' => null, 'based-on' => null];
         $description = [];
         $ingredients = [];
         $steps = [];
@@ -86,7 +88,7 @@ final class Recipe
                     continue;
                 }
 
-                if (preg_match('/^(title|servings|prep|cook|image)\s*:\s*(.*)$/i', $line, $kv)) {
+                if (preg_match('/^(title|servings|prep|cook|image|based-on)\s*:\s*(.*)$/i', $line, $kv)) {
                     $meta[strtolower($kv[1])] = trim($kv[2]);
                     $seen = true;
                     continue;
@@ -122,6 +124,7 @@ final class Recipe
             trim(implode("\n", $description)),
             $ingredients,
             $steps,
+            preg_match('/^\s*(\d{1,10})\s*$/', (string) $meta['based-on'], $id) && (int) $id[1] > 0 ? (int) $id[1] : null,
         );
     }
 

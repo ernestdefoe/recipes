@@ -28,8 +28,8 @@ function t(key: string, params?: Record<string, string>): string {
   return extractText(app.translator.trans(`ernestdefoe-recipes.lib.composer.${key}`, params ?? {}));
 }
 
-export function openForm(body: string | undefined, onsubmit: (body: string) => void): void {
-  app.modal.show(() => import('./RecipeModal'), { body, onsubmit });
+export function openForm(body: string | undefined, onsubmit: (body: string) => void, mode?: 'remix'): void {
+  app.modal.show(() => import('./RecipeModal'), { body, onsubmit, mode });
 }
 
 export function recipeNode(Node: any): any {

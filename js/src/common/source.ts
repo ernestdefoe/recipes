@@ -13,15 +13,18 @@ export interface RecipeFields {
   prep: string;
   cook: string;
   image: string;
+  /** The post id of the recipe this one is a variant of, or ''. */
+  basedOn: string;
   description: string;
   ingredients: string;
   steps: string;
 }
 
-const KEYS = ['title', 'servings', 'prep', 'cook', 'image'] as const;
+/** Header key in the text → field. `based-on` is the one whose spelling differs. */
+const KEYS = { title: 'title', servings: 'servings', prep: 'prep', cook: 'cook', image: 'image', 'based-on': 'basedOn' } as const;
 
 export function emptyFields(): RecipeFields {
-  return { title: '', servings: '', prep: '', cook: '', image: '', description: '', ingredients: '', steps: '' };
+  return { title: '', servings: '', prep: '', cook: '', image: '', basedOn: '', description: '', ingredients: '', steps: '' };
 }
 
 /** Text → fields. Mirrors the reader in src/Recipe.php: header, text, two sections. */
@@ -48,9 +51,9 @@ export function parse(body: string): RecipeFields {
         continue;
       }
 
-      const kv = /^(title|servings|prep|cook|image)\s*:\s*(.*)$/i.exec(line);
+      const kv = /^(title|servings|prep|cook|image|based-on)\s*:\s*(.*)$/i.exec(line);
       if (kv) {
-        fields[kv[1].toLowerCase() as (typeof KEYS)[number]] = kv[2].trim();
+        fields[KEYS[kv[1].toLowerCase() as keyof typeof KEYS]] = kv[2].trim();
         seen = true;
         continue;
       }
@@ -89,8 +92,8 @@ export function serialize(input: RecipeFields): string {
 
   const out: string[] = [];
 
-  for (const key of KEYS) {
-    const value = oneLine(fields[key]);
+  for (const [key, field] of Object.entries(KEYS)) {
+    const value = oneLine(fields[field]);
     if (value) out.push(`${key}: ${value}`);
   }
 

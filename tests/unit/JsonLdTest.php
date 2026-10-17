@@ -17,7 +17,7 @@ class JsonLdTest extends TestCase
 
         $recipe = Recipe::parse("title: Soup\nservings: 2\nprep: 5m\ncook: 1h\nimage: https://e.com/s.jpg\n\nWarm.\n\n[ingredients]\n1 onion\nFor the stock:\n1 l water\n[/ingredients]\n[steps]\nChop.\nTo finish:\nSimmer for [20m].\n[/steps]");
 
-        $data = (new RecipeJsonLd(new Labels($translator)))->schema($recipe, 'Ernest', '2026-10-16T10:00:00+00:00', 'Fallback');
+        $data = (new RecipeJsonLd(new Labels($translator), $this->createStub(\Flarum\Http\UrlGenerator::class), $this->createStub(\Flarum\Http\SlugManager::class)))->schema($recipe, 'Ernest', '2026-10-16T10:00:00+00:00', 'Fallback');
 
         $this->assertSame([
             '@context' => 'https://schema.org',
@@ -44,7 +44,7 @@ class JsonLdTest extends TestCase
     public function test_untitled_recipe_takes_the_page_title(): void
     {
         $translator = $this->createStub(TranslatorInterface::class);
-        $data = (new RecipeJsonLd(new Labels($translator)))->schema(Recipe::parse("[steps]\nStir\n[/steps]"), null, null, 'Grandma’s stew');
+        $data = (new RecipeJsonLd(new Labels($translator), $this->createStub(\Flarum\Http\UrlGenerator::class), $this->createStub(\Flarum\Http\SlugManager::class)))->schema(Recipe::parse("[steps]\nStir\n[/steps]"), null, null, 'Grandma’s stew');
 
         $this->assertSame('Grandma’s stew', $data['name']);
         $this->assertArrayNotHasKey('author', $data);

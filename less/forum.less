@@ -317,6 +317,191 @@ button.Recipe-timer {
   min-height: 120px;
 }
 
+// Variants: "Based on …" on a variant, the list of variants under an original.
+.Recipe-basedOn {
+  order: 4;
+  width: 100%;
+  margin: 8px 0 0;
+  font-size: 0.9em;
+  color: var(--muted-color);
+
+  .icon {
+    margin-right: 4px;
+  }
+}
+
+.Recipe-remix {
+  position: relative;
+  order: 2;
+  margin-top: -6px;
+}
+
+.Recipe-remixButton {
+  color: var(--muted-color);
+}
+
+.Recipe-remixMenu {
+  position: absolute;
+  z-index: 2;
+  top: 100%;
+  right: 0;
+  min-width: 200px;
+  padding: 6px 0;
+  border-radius: var(--border-radius);
+  background: var(--body-bg);
+  box-shadow: 0 6px 16px var(--shadow-color, rgba(0, 0, 0, 0.2));
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+.Recipe-remixItem {
+  display: block;
+  width: 100%;
+  padding: 8px 15px;
+  border: 0;
+  background: none;
+  color: var(--text-color);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--control-bg);
+  }
+}
+
+.Recipe-variants {
+  margin-top: 18px;
+}
+
+.Post-body .Recipe-variantList,
+.Recipe-variantList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    padding: 4px 0;
+  }
+
+  .icon {
+    color: var(--muted-color);
+  }
+}
+
+.Recipe-variantBy {
+  color: var(--muted-color);
+}
+
+// The directory, /recipes.
+.RecipesPage-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.RecipesPage-search {
+  flex: 1 1 240px;
+}
+
+.RecipesPage-tag {
+  flex: 0 1 220px;
+}
+
+.RecipesPage-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.RecipesPage-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--control-bg);
+  border-radius: var(--border-radius);
+  background: var(--body-bg);
+  color: var(--text-color);
+  transition: border-color 0.15s;
+
+  &:hover,
+  &:focus-visible {
+    border-color: var(--primary-color);
+    text-decoration: none;
+  }
+}
+
+.RecipesPage-image {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 16 / 10;
+  background: var(--control-bg);
+  color: var(--muted-color);
+  font-size: 32px;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.RecipesPage-variant {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--body-bg);
+  color: var(--text-color);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.RecipesPage-body {
+  padding: 10px 12px 12px;
+}
+
+.RecipesPage-title {
+  margin: 0 0 2px;
+  font-size: 1.05em;
+  line-height: 1.3;
+}
+
+.RecipesPage-by,
+.RecipesPage-meta {
+  margin: 0;
+  font-size: 0.85em;
+  color: var(--muted-color);
+}
+
+.RecipesPage-meta {
+  display: flex;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.RecipesPage-empty {
+  padding: 40px 0;
+  color: var(--muted-color);
+  text-align: center;
+}
+
+.RecipesPage-more {
+  margin-top: 16px;
+  text-align: center;
+}
+
 // Print: one recipe, nothing else (see forum/card.ts print()).
 .Recipe-printRoot {
   display: none;
@@ -346,6 +531,7 @@ button.Recipe-timer {
     }
 
     .Recipe-print,
+    .Recipe-remix,
     .Recipe-servings--interactive .Button,
     .Recipe-reset,
     .Recipe-timer .icon {

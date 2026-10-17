@@ -9,7 +9,12 @@
  * print view. Every editor writes the same text — see src/Recipe.php.
  */
 
+use ErnestDefoe\Recipes\Api\ListRecipesController;
+use ErnestDefoe\Recipes\Console\ReindexCommand;
 use ErnestDefoe\Recipes\Formatter\Configure;
+use ErnestDefoe\Recipes\Http\BasedOnRedirect;
+use ErnestDefoe\Recipes\Http\RecipesPageContent;
+use ErnestDefoe\Recipes\Index\KeepIndexCurrent;
 use ErnestDefoe\Recipes\Formatter\Render;
 use ErnestDefoe\Recipes\Seo\RecipeJsonLd;
 use Flarum\Extend;
@@ -26,7 +31,20 @@ return [
          */
         ->jsDirectory(__DIR__.'/js/dist/forum')
         ->css(__DIR__.'/less/forum.less')
-        ->content(RecipeJsonLd::class),
+        ->content(RecipeJsonLd::class)
+        ->route('/recipes', 'recipes', RecipesPageContent::class),
+
+    (new Extend\Routes('forum'))
+        ->get('/recipes/from/{id:\d+}', 'recipes.from', BasedOnRedirect::class),
+
+    (new Extend\Routes('api'))
+        ->get('/recipes', 'recipes.index', ListRecipesController::class),
+
+    (new Extend\Event())
+        ->subscribe(KeepIndexCurrent::class),
+
+    (new Extend\Console())
+        ->command(ReindexCommand::class),
 
     (new Extend\Frontend('admin'))
         ->js(__DIR__.'/js/dist/admin.js'),

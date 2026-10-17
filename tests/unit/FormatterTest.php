@@ -60,12 +60,22 @@ class FormatterTest extends TestCase
         return $translator;
     }
 
+    private function urls(): \Flarum\Http\UrlGenerator
+    {
+        $routes = $this->createStub(\Flarum\Http\RouteCollectionUrlGenerator::class);
+        $routes->method('route')->willReturnCallback(fn (string $name, array $p = []) => '/recipes/from/'.($p['id'] ?? ''));
+        $url = $this->createStub(\Flarum\Http\UrlGenerator::class);
+        $url->method('to')->willReturn($routes);
+
+        return $url;
+    }
+
     private function render(string $text, bool $scribe = false): string
     {
         [$parser, $renderer] = $this->formatter($scribe);
         $xml = $parser->parse($text);
 
-        return $renderer->render((new Render(new Labels($this->translator())))($renderer, null, $xml));
+        return $renderer->render((new Render(new Labels($this->translator()), $this->urls()))($renderer, null, $xml));
     }
 
     private const MARKDOWN = <<<'TXT'
@@ -100,7 +110,7 @@ TXT;
     {
         $out = $this->render(self::MARKDOWN);
 
-        $this->assertStringContainsString('<div class="Recipe" data-servings="4">', $out);
+        $this->assertStringContainsString('<div class="Recipe" data-servings="4" data-prep="600" data-cook="3900">', $out);
         $this->assertStringContainsString('<img class="Recipe-image" src="https://example.com/mac.jpg?a=1&amp;b=2"', $out);
         $this->assertStringContainsString('<h3 class="Recipe-title">Mac &amp; Cheese :) https://example.com/x</h3>', $out, 'no emoticon, no link, no torn tag');
         $this->assertStringContainsString('<dd class="Recipe-prep">duration.minutes=10</dd>', $out);
@@ -178,6 +188,14 @@ TXT;
         [$parser, $renderer] = $this->formatter(false);
         $xml = $parser->parse('Just **a** post with [b]recipe[/b] in it.');
 
-        $this->assertSame($xml, (new Render(new Labels($this->translator())))($renderer, null, $xml));
+        $this->assertSame($xml, (new Render(new Labels($this->translator()), $this->urls()))($renderer, null, $xml));
+    }
+
+    public function test_a_variant_links_to_its_original_and_carries_raw_times(): void
+    {
+        $out = $this->render("[recipe]\ntitle: Vegan pancakes\nprep: 10m\ncook: 1h\nbased-on: 42\n[/recipe]");
+
+        $this->assertStringContainsString('data-prep="600" data-cook="3600" data-based-on="42"', $out);
+        $this->assertStringContainsString('<p class="Recipe-basedOn"><i class="icon fas fa-code-branch" aria-hidden="true"></i> <a href="/recipes/from/42">based_on</a></p>', $out);
     }
 }

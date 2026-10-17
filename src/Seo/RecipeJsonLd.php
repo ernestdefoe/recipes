@@ -7,7 +7,11 @@ use ErnestDefoe\Recipes\Formatter\Blocks;
 use ErnestDefoe\Recipes\Formatter\Labels;
 use ErnestDefoe\Recipes\Recipe;
 use Flarum\Frontend\Document;
+use Flarum\Discussion\Discussion;
 use Flarum\Http\RequestUtil;
+use Flarum\Http\SlugManager;
+use Flarum\Http\UrlGenerator;
+use Flarum\User\User;
 use Flarum\Post\CommentPost;
 use Flarum\Post\Post;
 use Psr\Http\Message\ServerRequestInterface;
@@ -31,8 +35,12 @@ use Psr\Http\Message\ServerRequestInterface;
  */
 class RecipeJsonLd
 {
-    public function __construct(private readonly Labels $labels)
-    {
+    public function __construct(
+        private readonly Labels $labels,
+        // Required: the container fills an optional class parameter with null.
+        private readonly UrlGenerator $url,
+        private readonly SlugManager $slugs,
+    ) {
     }
 
     public function __invoke(Document $document, ServerRequestInterface $request): void
@@ -90,6 +98,10 @@ class RecipeJsonLd
         foreach ($recipes as $recipe) {
             $data = $this->schema($recipe, $author, $published, (string) ($document->title ?? ''));
 
+            if ($recipe->basedOn !== null && ($original = $this->originalUrl(RequestUtil::getActor($request), $recipe->basedOn))) {
+                $data['isBasedOn'] = $original;
+            }
+
             // JSON_HEX_TAG: a step that says "</script>" cannot end the block early.
             $json = json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP);
 
@@ -97,6 +109,16 @@ class RecipeJsonLd
                 $document->head[] = '<script type="application/ld+json">'.$json.'</script>';
             }
         }
+    }
+
+    /** The original's address, if this visitor may see it. One query, only for a variant. */
+    private function originalUrl(User $actor, int $postId): ?string
+    {
+        $post = Post::whereVisibleTo($actor)->with('discussion')->find($postId);
+
+        return $post && $post->discussion
+            ? $this->url->to('forum')->route('discussion', ['id' => $this->slugs->forResource(Discussion::class)->toSlug($post->discussion), 'near' => $post->number])
+            : null;
     }
 
     private function firstPostHasNoCard(Document $document): bool

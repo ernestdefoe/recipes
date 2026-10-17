@@ -4,6 +4,7 @@ import type ItemList from 'flarum/common/utils/ItemList';
 import CommentPost from 'flarum/forum/components/CommentPost';
 import TextEditor from 'flarum/common/components/TextEditor';
 import TextEditorButton from 'flarum/common/components/TextEditorButton';
+import LinkButton from 'flarum/common/components/LinkButton';
 import { registerWithRichText, registerWithScribe } from './editors';
 import { openForm } from './node';
 
@@ -35,6 +36,22 @@ function blockAt(text: string, cursor: number): { start: number; end: number; bo
 }
 
 app.initializers.add('ernestdefoe/recipes', () => {
+  // The recipe directory. The page is its own chunk: only its visitors load it.
+  app.routes.recipes = {
+    path: '/recipes',
+    component: () => import('./components/RecipesPage').then(async (page) => (await page.loadCore(), page)),
+  };
+
+  // String form: IndexSidebar may sit in a lazy chunk, and extending an
+  // imported copy would patch one core never renders.
+  extend('flarum/forum/components/IndexSidebar', 'navItems', function (items: ItemList<any>) {
+    items.add(
+      'ernestdefoe-recipes',
+      LinkButton.component({ href: app.route('recipes'), icon: 'fas fa-utensils' }, app.translator.trans('ernestdefoe-recipes.forum.directory.nav')),
+      85
+    );
+  });
+
   registerWithScribe();
   registerWithRichText();
 
@@ -46,7 +63,8 @@ app.initializers.add('ernestdefoe/recipes', () => {
   extend(CommentPost.prototype, 'refreshContent', function (this: any) {
     const element = this.element as HTMLElement;
     // The card's code is fetched by the first page that has a card on it.
-    if (element?.querySelector('.Recipe:not(.Recipe--source)')) import('./card').then((card) => card.default(element));
+    const post = this.attrs.post;
+    if (element?.querySelector('.Recipe:not(.Recipe--source)')) import('./card').then((card) => card.default(element, post));
   });
 
   /*

@@ -98,4 +98,14 @@ TXT;
         $this->assertFalse($recipe->isEmpty());
         $this->assertTrue(Recipe::parse("only words\n")->isEmpty());
     }
+
+    public function test_based_on_is_a_post_id_or_nothing(): void
+    {
+        $this->assertSame(42, Recipe::parse("title: Vegan pancakes\nbased-on: 42")->basedOn);
+        $this->assertSame(42, Recipe::parse("Based-On:  42 ")->basedOn);
+
+        foreach (['0', '-3', 'abc', '42; DROP', 'https://example.com/d/1', ''] as $value) {
+            $this->assertNull(Recipe::parse("based-on: $value")->basedOn, $value);
+        }
+    }
 }

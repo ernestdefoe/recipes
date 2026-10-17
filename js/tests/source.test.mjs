@@ -50,4 +50,9 @@ assert.equal(isEmpty(emptyFields()), true);
 assert.equal(isEmpty({ ...emptyFields(), description: 'only words' }), true);
 assert.equal(isEmpty({ ...emptyFields(), steps: 'Stir' }), false);
 
+// A variant keeps its original's id through the form.
+const variant = parse('title: Vegan pancakes\nbased-on: 42\n\n[steps]\nStir\n[/steps]');
+assert.equal(variant.basedOn, '42');
+assert.equal(serialize(variant), 'title: Vegan pancakes\nbased-on: 42\n\n[steps]\nStir\n[/steps]');
+
 console.log('source: ok');

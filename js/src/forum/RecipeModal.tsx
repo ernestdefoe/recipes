@@ -13,6 +13,8 @@ import { emptyFields, isEmpty, parse, serialize, type RecipeFields } from '../co
 export interface RecipeModalAttrs extends IInternalModalAttrs {
   /** The block's text when editing one; absent when inserting. */
   body?: string;
+  /** 'remix': a copy of someone's recipe, about to become a variant. */
+  mode?: 'remix';
   /** Receives the block's text (without the [recipe] wrapper). */
   onsubmit: (body: string, fields: RecipeFields) => void;
 }
@@ -43,7 +45,7 @@ export default class RecipeModal extends FormModal<RecipeModalAttrs> {
   }
 
   title() {
-    return t(this.attrs.body ? 'edit_title' : 'title');
+    return t(this.attrs.mode === 'remix' ? 'remix_title' : this.attrs.body ? 'edit_title' : 'title');
   }
 
   content() {
@@ -97,7 +99,7 @@ export default class RecipeModal extends FormModal<RecipeModalAttrs> {
 
           <div className="Form-group">
             <Button className="Button Button--primary" type="submit">
-              {t(this.attrs.body ? 'update' : 'insert')}
+              {t(this.attrs.mode === 'remix' ? 'remix_insert' : this.attrs.body ? 'update' : 'insert')}
             </Button>
           </div>
         </div>

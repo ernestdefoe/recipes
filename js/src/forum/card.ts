@@ -1,6 +1,8 @@
 import app from 'flarum/forum/app';
 import extractText from 'flarum/common/utils/extractText';
 import { format, isPlural, matchCase } from '../common/amount';
+import { addRemix } from './remix';
+import { related } from './related';
 
 /**
  * What a READER can do with a recipe card: change the servings, start a timer,
@@ -22,7 +24,7 @@ function t(key: string, params?: Record<string, string>): string {
  * that appears live, a post edited in place. index.ts calls it from
  * CommentPost's refreshContent, which runs on create AND update.
  */
-export default function decorate(root: HTMLElement | null | undefined): void {
+export default function decorate(root: HTMLElement | null | undefined, post?: any): void {
   if (!root) return;
 
   root.querySelectorAll<HTMLElement>('.Recipe:not(.Recipe--source)').forEach((card) => {
@@ -30,6 +32,10 @@ export default function decorate(root: HTMLElement | null | undefined): void {
     card.dataset[READY] = '1';
 
     addPrint(card);
+    if (post) {
+      addRemix(card, post);
+      related(card, Number(post.id()));
+    }
     addServings(card);
     card.querySelectorAll<HTMLElement>('.Recipe-timer[data-seconds]').forEach(addTimer);
   });

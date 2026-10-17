@@ -51,9 +51,11 @@ class Configure
         }
 
         $tag = $config->tags->add(self::TAG);
-        $this->attributes($tag, ['v', 'title', 'servings', 'prep', 'cook', 'total', 'l_servings', 'l_prep', 'l_cook', 'l_total']);
-        $tag->attributes->add('image')->filterChain->append('#url');
-        $tag->attributes->get('image')->required = false;
+        $this->attributes($tag, ['v', 'title', 'servings', 'prep', 'cook', 'total', 'l_servings', 'l_prep', 'l_cook', 'l_total', 'prep_s', 'cook_s', 'based_on', 'l_based_on']);
+        foreach (['image', 'based_on_url'] as $url) {
+            $tag->attributes->add($url)->filterChain->append('#url');
+            $tag->attributes->get($url)->required = false;
+        }
 
         /*
          * Opaque contents (see the class comment), and no <br> inserted for the
@@ -101,11 +103,18 @@ class Configure
             .'<xsl:when test="@v">'
             .'<xsl:attribute name="class">Recipe</xsl:attribute>'
             .'<xsl:if test="@servings"><xsl:attribute name="data-servings"><xsl:value-of select="@servings"/></xsl:attribute></xsl:if>'
+            // Raw values for Remix, which rebuilds the recipe's text from the card.
+            .'<xsl:if test="@prep_s"><xsl:attribute name="data-prep"><xsl:value-of select="@prep_s"/></xsl:attribute></xsl:if>'
+            .'<xsl:if test="@cook_s"><xsl:attribute name="data-cook"><xsl:value-of select="@cook_s"/></xsl:attribute></xsl:if>'
+            .'<xsl:if test="@based_on"><xsl:attribute name="data-based-on"><xsl:value-of select="@based_on"/></xsl:attribute></xsl:if>'
             .'<xsl:if test="@image"><img class="Recipe-image" src="{@image}" alt="" loading="lazy"/></xsl:if>'
             .'<div class="Recipe-header">'
             .'<xsl:if test="@title"><h3 class="Recipe-title"><xsl:value-of select="@title"/></h3></xsl:if>'
             .'<xsl:if test="@servings or @prep or @cook"><dl class="Recipe-meta">'.$meta.'</dl></xsl:if>'
             .'</div>'
+            // forum/related.ts names the original once it knows the reader may see it.
+            .'<xsl:if test="@based_on_url"><p class="Recipe-basedOn"><i class="icon fas fa-code-branch" aria-hidden="true"></i> '
+            .'<a href="{@based_on_url}"><xsl:value-of select="@l_based_on"/></a></p></xsl:if>'
             .'<xsl:apply-templates/>'
             .'</xsl:when>'
             /*
