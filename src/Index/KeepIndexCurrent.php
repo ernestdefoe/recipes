@@ -2,6 +2,7 @@
 
 namespace ErnestDefoe\Recipes\Index;
 
+use ErnestDefoe\Recipes\Formatter\Blocks;
 use Flarum\Post\CommentPost;
 use Flarum\Post\Event\Deleted;
 use Flarum\Post\Event\Posted;
@@ -24,15 +25,17 @@ class KeepIndexCurrent
 
     public function subscribe(Dispatcher $events): void
     {
-        $events->listen(Posted::class, fn (Posted $e) => $this->index($e->post));
+        // A new post without a recipe has no rows to replace: no query at all.
+        $events->listen(Posted::class, fn (Posted $e) => Blocks::has((string) $e->post->getParsedContentAttribute()) && $this->index($e->post));
         $events->listen(Revised::class, fn (Revised $e) => $this->index($e->post));
         // The foreign key cascades too; this covers a database that ignores it (SQLite).
         $events->listen(Deleted::class, fn (Deleted $e) => $this->db->table('recipe_cards')->where('post_id', $e->post->id)->delete());
     }
 
-    private function index(CommentPost $post): void
+    private function index(CommentPost $post): bool
     {
-        // Cheap enough for every post: most end at Blocks::has().
         Indexer::sync($this->db, (int) $post->id, (string) $post->getParsedContentAttribute());
+
+        return true;
     }
 }

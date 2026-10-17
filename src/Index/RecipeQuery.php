@@ -132,7 +132,7 @@ class RecipeQuery
                 'discussion' => $this->slugs->forResource(Discussion::class)->toSlug($discussion),
                 'discussionTitle' => $discussion->title,
                 'createdAt' => $post->created_at?->toAtomString(),
-                'author' => $user ? ['username' => $user->username, 'displayName' => $user->display_name, 'avatarUrl' => $user->avatar_url] : null,
+                'author' => $user ? ['username' => $user->username, 'displayName' => $user->display_name] : null,
             ];
         }
 
