@@ -62,6 +62,8 @@ class DirectoryTest extends TestCase
                 $p(31, 3, 1, "title: Staff stew"),
                 $p(41, 4, 1, "title: Withheld", ['hidden_at' => $old, 'hidden_user_id' => 1]),
                 $p(51, 5, 1, "title: Smoky soup\nbased-on: 11"),
+                $p(53, 5, 3, "title: 50% rye loaf"),
+                $p(54, 5, 4, "title: snake_case stew"),
                 ['id' => 52, 'discussion_id' => 5, 'number' => 2, 'created_at' => $old, 'user_id' => 2, 'type' => 'comment', 'content' => '<t>100% delicious_soup</t>'],
             ],
         ]);
@@ -98,10 +100,10 @@ class DirectoryTest extends TestCase
     {
         $this->backfill();
 
-        $this->assertSame(['Smoky soup', 'Tomato soup', 'Vegan tomato soup'], $this->titles(''), 'guest');
+        $this->assertSame(['50% rye loaf', 'Smoky soup', 'Tomato soup', 'Vegan tomato soup', 'snake_case stew'], $this->titles(''), 'guest');
         // A private discussion is private from an admin too, until an extension
         // (Byobu) grants otherwise; hidden posts and restricted tags are not.
-        $this->assertSame(['Smoky soup', 'Staff stew', 'Tomato soup', 'Vegan tomato soup', 'Withheld'], $this->titles('', 1), 'admin');
+        $this->assertSame(['50% rye loaf', 'Smoky soup', 'Staff stew', 'Tomato soup', 'Vegan tomato soup', 'Withheld', 'snake_case stew'], $this->titles('', 1), 'admin');
     }
 
     #[Test]
@@ -110,6 +112,9 @@ class DirectoryTest extends TestCase
         $this->backfill();
 
         $this->assertSame(['Vegan tomato soup'], $this->titles('?filter[q]=vegan'));
+        $this->assertSame(['Vegan tomato soup'], $this->titles('?filter[q]=VEGAN'), 'any case, on every database');
+        $this->assertSame(['50% rye loaf'], $this->titles('?filter[q]='.rawurlencode('50%')), 'a % is a character, not a wildcard');
+        $this->assertSame(['snake_case stew'], $this->titles('?filter[q]=e_c'), 'and so is an underscore');
         $this->assertSame([], $this->titles('?filter[q]='.rawurlencode('100%')), 'a % is a character, not a wildcard');
         $this->assertSame(['Tomato soup', 'Vegan tomato soup'], $this->titles('?filter[tag]=food'));
         $this->assertSame([], $this->titles('?filter[tag]=staff'), 'a restricted tag answers nothing to a guest');
@@ -126,8 +131,11 @@ class DirectoryTest extends TestCase
 
         $this->assertCount(2, $first['data']);
         $this->assertTrue($first['more']);
-        $this->assertCount(1, $rest['data']);
-        $this->assertFalse($rest['more']);
+        $last = json_decode((string) $this->send($this->get('/api/recipes?page[limit]=2&page[offset]=4'))->getBody(), true);
+        $this->assertCount(2, $rest['data']);
+        $this->assertTrue($rest['more']);
+        $this->assertCount(1, $last['data']);
+        $this->assertFalse($last['more']);
     }
 
     #[Test]

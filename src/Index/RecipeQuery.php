@@ -44,7 +44,16 @@ class RecipeQuery
 
         $search = trim((string) $search);
         if ($search !== '') {
-            $query->where('recipe_cards.title', 'like', '%'.addcslashes(mb_substr($search, 0, 100), '%_\\').'%');
+            /*
+             * 🚨 One expression for every database. LIKE is case-SENSITIVE on
+             * PostgreSQL ("vegan" missed "Vegan soup" there), and SQLite has no
+             * default escape character, so `\%` matched a backslash. `!` as the
+             * escape is a single character in every dialect's string literal.
+             * The column goes through the grammar, so the table prefix applies.
+             */
+            $term = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], mb_strtolower(mb_substr($search, 0, 100)));
+            $column = $query->getGrammar()->wrap('recipe_cards.title');
+            $query->whereRaw("LOWER($column) LIKE ? ESCAPE '!'", ['%'.$term.'%']);
         }
 
         if ($tag !== null && $tag !== '') {
