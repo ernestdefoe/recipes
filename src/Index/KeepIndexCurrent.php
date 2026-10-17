@@ -25,17 +25,26 @@ class KeepIndexCurrent
 
     public function subscribe(Dispatcher $events): void
     {
-        // A new post without a recipe has no rows to replace: no query at all.
-        $events->listen(Posted::class, fn (Posted $e) => Blocks::has((string) $e->post->getParsedContentAttribute()) && $this->index($e->post));
-        $events->listen(Revised::class, fn (Revised $e) => $this->index($e->post));
+        // 🚨 Every listener returns nothing. Laravel's dispatcher stops at a
+        // listener that returns false, so `has() && index()` silenced every
+        // extension after this one for each post without a recipe.
+        $events->listen(Posted::class, function (Posted $e): void {
+            // A new post without a recipe has no rows to replace: no query at all.
+            if (Blocks::has((string) $e->post->getParsedContentAttribute())) {
+                $this->index($e->post);
+            }
+        });
+        $events->listen(Revised::class, function (Revised $e): void {
+            $this->index($e->post);
+        });
         // The foreign key cascades too; this covers a database that ignores it (SQLite).
-        $events->listen(Deleted::class, fn (Deleted $e) => $this->db->table('recipe_cards')->where('post_id', $e->post->id)->delete());
+        $events->listen(Deleted::class, function (Deleted $e): void {
+            $this->db->table('recipe_cards')->where('post_id', $e->post->id)->delete();
+        });
     }
 
-    private function index(CommentPost $post): bool
+    private function index(CommentPost $post): void
     {
         Indexer::sync($this->db, (int) $post->id, (string) $post->getParsedContentAttribute());
-
-        return true;
     }
 }
