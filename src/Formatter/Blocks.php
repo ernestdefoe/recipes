@@ -72,8 +72,11 @@ final class Blocks
         return $text;
     }
 
-    /** @return list<Recipe> */
-    public static function recipes(string $xml): array
+    /**
+     * @param list<string> $fieldKeys
+     * @return list<Recipe>
+     */
+    public static function recipes(string $xml, array $fieldKeys = []): array
     {
         if (! self::has($xml) || ! ($dom = self::load($xml))) {
             return [];
@@ -81,7 +84,7 @@ final class Blocks
 
         $recipes = [];
         foreach (self::elements($dom) as $element) {
-            $recipe = Recipe::parse(self::body($element));
+            $recipe = Recipe::parse(self::body($element), $fieldKeys);
             if (! $recipe->isEmpty()) {
                 $recipes[] = $recipe;
             }

@@ -46,6 +46,7 @@ final class Recipe
     /**
      * @param list<array{heading: string}|array{text: string, quantity: ?array<string, mixed>}> $ingredients
      * @param list<array{heading: string}|array{parts: list<array{text: string}|array{timer: int}>}> $steps
+     * @param array<string, float> $fields the admin-defined values this recipe gives (see Fields)
      */
     public function __construct(
         public readonly string $title,
@@ -57,10 +58,14 @@ final class Recipe
         public readonly array $ingredients,
         public readonly array $steps,
         public readonly ?int $basedOn = null,
+        public readonly array $fields = [],
     ) {
     }
 
-    public static function parse(string $body): self
+    /**
+     * @param list<string> $fieldKeys the forum's custom field keys (Fields::keys())
+     */
+    public static function parse(string $body, array $fieldKeys = []): self
     {
         $meta = ['title' => '', 'servings' => null, 'prep' => null, 'cook' => null, 'image' => null, 'based-on' => null];
         $description = [];
@@ -88,10 +93,20 @@ final class Recipe
                     continue;
                 }
 
-                if (preg_match('/^(title|servings|prep|cook|image|based-on)\s*:\s*(.*)$/i', $line, $kv)) {
-                    $meta[strtolower($kv[1])] = trim($kv[2]);
-                    $seen = true;
-                    continue;
+                /*
+                 * A known key, a custom field's key, or — once a header has
+                 * begun — any other key. The last keeps a field an admin has
+                 * since removed in the header, hidden, instead of spilling into
+                 * the description; requiring a header first keeps a recipe that
+                 * simply opens with "Note: …" as text.
+                 */
+                if (preg_match('/^([a-z][a-z0-9-]{0,29})\s*:\s*(.*)$/i', $line, $kv)) {
+                    $key = strtolower($kv[1]);
+                    if (array_key_exists($key, $meta) || in_array($key, $fieldKeys, true) || $seen) {
+                        $meta[$key] = trim($kv[2]);
+                        $seen = true;
+                        continue;
+                    }
                 }
 
                 $state = 'text';
@@ -125,7 +140,25 @@ final class Recipe
             $ingredients,
             $steps,
             preg_match('/^\s*(\d{1,10})\s*$/', (string) $meta['based-on'], $id) && (int) $id[1] > 0 ? (int) $id[1] : null,
+            self::fieldValues($meta, $fieldKeys),
         );
+    }
+
+    /**
+     * @param array<string, mixed> $meta
+     * @param list<string> $keys
+     * @return array<string, float>
+     */
+    private static function fieldValues(array $meta, array $keys): array
+    {
+        $values = [];
+        foreach ($keys as $key) {
+            if (isset($meta[$key]) && ($number = Fields::number((string) $meta[$key])) !== null) {
+                $values[$key] = $number;
+            }
+        }
+
+        return $values;
     }
 
     public function total(): ?int

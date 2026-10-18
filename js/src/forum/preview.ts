@@ -61,8 +61,17 @@ function list(kind: 'ingredients' | 'steps', lines: string): HTMLElement | null 
   return section;
 }
 
+function definitions(): { key: string; label: string; unit: string }[] {
+  const list = app.forum.attribute<{ key: string; label: string; unit: string }[]>('recipesFields');
+  return Array.isArray(list) ? list : [];
+}
+
 export default function preview(source: HTMLElement): void {
-  const fields = parse(source.textContent || '');
+  const defs = definitions();
+  const fields = parse(
+    source.textContent || '',
+    defs.map((d) => d.key)
+  );
   const card = source.parentElement;
 
   const header = el('div', 'Recipe-header');
@@ -76,6 +85,17 @@ export default function preview(source: HTMLElement): void {
     meta.append(item);
   }
   if (meta.childElementCount) header.append(meta);
+
+  // The admin's fields, as typed: the card shows them properly once posted.
+  const facts = el('dl', 'Recipe-facts');
+  for (const def of defs) {
+    const value = fields.extra[def.key];
+    if (!value) continue;
+    const item = el('div', 'Recipe-fact');
+    item.append(el('dt', '', def.label), el('dd', '', def.unit ? `${value} ${def.unit}` : value));
+    facts.append(item);
+  }
+  if (facts.childElementCount) header.append(facts);
 
   const parts: (HTMLElement | null)[] = [header];
   if (fields.description) parts.push(el('div', 'Recipe-description', fields.description));

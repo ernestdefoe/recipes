@@ -108,4 +108,28 @@ TXT;
             $this->assertNull(Recipe::parse("based-on: $value")->basedOn, $value);
         }
     }
+
+    public function test_custom_fields_are_numbers_from_the_header(): void
+    {
+        $recipe = Recipe::parse("title: Soup\nprotein: 12,5\nphe: 340\ncalories: lots\n\nNice soup.", ['protein', 'phe', 'calories']);
+
+        $this->assertSame(['protein' => 12.5, 'phe' => 340.0], $recipe->fields, 'a value that is not a number is not shown');
+        $this->assertSame('Nice soup.', $recipe->description);
+    }
+
+    public function test_a_removed_fields_value_stays_out_of_the_description(): void
+    {
+        $recipe = Recipe::parse("title: Soup\nsodium: 400\nservings: 2\n\nNice soup.");
+
+        $this->assertSame('Nice soup.', $recipe->description);
+        $this->assertSame(2, $recipe->servings, 'keys after it still read');
+        $this->assertSame([], $recipe->fields);
+    }
+
+    public function test_a_recipe_that_opens_with_a_note_keeps_it(): void
+    {
+        $recipe = Recipe::parse("Note: best made the day before\n[steps]\nStir\n[/steps]");
+
+        $this->assertSame('Note: best made the day before', $recipe->description);
+    }
 }

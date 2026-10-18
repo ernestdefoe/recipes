@@ -3,6 +3,7 @@
 namespace ErnestDefoe\Recipes\Seo;
 
 use ErnestDefoe\Recipes\Duration;
+use ErnestDefoe\Recipes\Fields;
 use ErnestDefoe\Recipes\Formatter\Blocks;
 use ErnestDefoe\Recipes\Formatter\Labels;
 use ErnestDefoe\Recipes\Recipe;
@@ -40,6 +41,7 @@ class RecipeJsonLd
         // Required: the container fills an optional class parameter with null.
         private readonly UrlGenerator $url,
         private readonly SlugManager $slugs,
+        private readonly Fields $fields,
     ) {
     }
 
@@ -87,7 +89,7 @@ class RecipeJsonLd
             return;
         }
 
-        $recipes = Blocks::recipes((string) $post->getParsedContentAttribute());
+        $recipes = Blocks::recipes((string) $post->getParsedContentAttribute(), $this->fields->keys());
         if (! $recipes) {
             return;
         }
@@ -109,6 +111,34 @@ class RecipeJsonLd
                 $document->head[] = '<script type="application/ld+json">'.$json.'</script>';
             }
         }
+    }
+
+    /**
+     * schema.org's nutrition is PER SERVING. A per-serving field goes in as
+     * written; a whole-recipe one is divided by the servings, and left out
+     * when there are none to divide by. A field the admin linked to no
+     * schema.org property (PHE, say) is shown on the card only.
+     *
+     * @return array<string, string>
+     */
+    private function nutrition(Recipe $recipe): array
+    {
+        $out = [];
+        foreach ($this->fields->all() as $field) {
+            $value = $recipe->fields[$field['key']] ?? null;
+            if ($value === null || $field['schema'] === null) {
+                continue;
+            }
+            if ($field['scope'] === 'recipe') {
+                if (! $recipe->servings) {
+                    continue;
+                }
+                $value /= $recipe->servings;
+            }
+            $out[Fields::SCHEMA[$field['schema']]] = trim(Fields::display(round($value, 2)).' '.$field['unit']);
+        }
+
+        return $out;
     }
 
     /** The original's address, if this visitor may see it. One query, only for a variant. */
@@ -194,6 +224,10 @@ class RecipeJsonLd
         }
         if (($total = $recipe->total()) !== null) {
             $data['totalTime'] = Duration::iso($total);
+        }
+
+        if ($nutrition = $this->nutrition($recipe)) {
+            $data['nutrition'] = ['@type' => 'NutritionInformation'] + $nutrition;
         }
 
         $ingredients = [];

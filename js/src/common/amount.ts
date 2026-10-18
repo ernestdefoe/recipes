@@ -64,6 +64,16 @@ export function decimal(value: number, locale?: string): string {
   return rounded.toLocaleString(locale, { maximumFractionDigits: digits, minimumFractionDigits: 0 });
 }
 
+/**
+ * A field value (protein, PHE, calories): never rounded to a "nice" number.
+ * Someone counting milligrams of phenylalanine needs 123, not 125. Up to
+ * three decimals, as the server stores them; scaling rounds only the noise
+ * of the multiplication away.
+ */
+export function measure(value: number, locale?: string): string {
+  return (Math.round(value * 1000) / 1000).toLocaleString(locale, { maximumFractionDigits: 3, minimumFractionDigits: 0 });
+}
+
 export function format(value: number, useDecimal: boolean, locale?: string): string {
   return useDecimal ? decimal(value, locale) : fraction(value);
 }

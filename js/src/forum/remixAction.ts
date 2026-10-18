@@ -54,6 +54,16 @@ function listLines(card: HTMLElement, kind: 'ingredients' | 'steps'): string {
   return lines.join('\n');
 }
 
+/** The raw number the server wrote for each field — not the localised or scaled text. */
+function rawFacts(card: HTMLElement): Record<string, string> {
+  const extra: Record<string, string> = {};
+  card.querySelectorAll<HTMLElement>('.Recipe-fact[data-key]').forEach((fact) => {
+    const value = fact.querySelector<HTMLElement>('.Recipe-factValue')?.dataset.q;
+    if (fact.dataset.key && value) extra[fact.dataset.key] = value;
+  });
+  return extra;
+}
+
 export function cardToFields(card: HTMLElement, postId: string): RecipeFields {
   return {
     ...emptyFields(),
@@ -66,6 +76,8 @@ export function cardToFields(card: HTMLElement, postId: string): RecipeFields {
     description: card.querySelector('.Recipe-description')?.textContent?.trim() ?? '',
     ingredients: listLines(card, 'ingredients'),
     steps: listLines(card, 'steps'),
+    // The raw number the server wrote, not the localised or scaled text.
+    extra: rawFacts(card),
   };
 }
 

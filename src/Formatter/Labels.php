@@ -20,7 +20,7 @@ class Labels
      */
     private const ENGLISH = [
         'servings' => 'Serves', 'prep' => 'Prep', 'cook' => 'Cook', 'total' => 'Total',
-        'ingredients' => 'Ingredients', 'steps' => 'Method', 'based_on' => 'Based on another recipe',
+        'ingredients' => 'Ingredients', 'steps' => 'Method', 'based_on' => 'Based on another recipe', 'per_serving' => 'per serving',
         'duration.hours' => '{count} h', 'duration.minutes' => '{count} min', 'duration.seconds' => '{count} s',
     ];
 

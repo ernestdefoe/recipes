@@ -159,6 +159,18 @@ class Configure
             .'<xsl:if test="@unit"><span class="Recipe-unit"><xsl:value-of select="@unit"/></span></xsl:if>'
             .'<xsl:apply-templates/></li>';
 
+        // The admin's own fields (src/Fields.php): label, number, unit.
+        $facts = $config->tags->add('RECIPE_FACTS');
+        $facts->template = '<dl class="Recipe-facts"><xsl:apply-templates/></dl>';
+
+        $fact = $config->tags->add('RECIPE_FACT');
+        $this->attributes($fact, ['key', 'label', 'value', 'q', 'unit', 'scale', 'per']);
+        $fact->template = '<div class="Recipe-fact" data-key="{@key}"><dt><xsl:value-of select="@label"/></dt><dd>'
+            .'<span class="Recipe-factValue" data-q="{@q}"><xsl:if test="@scale"><xsl:attribute name="data-scale">1</xsl:attribute></xsl:if><xsl:value-of select="@value"/></span>'
+            .'<xsl:if test="@unit"><xsl:text> </xsl:text><span class="Recipe-factUnit"><xsl:value-of select="@unit"/></span></xsl:if>'
+            .'<xsl:if test="@per"><xsl:text> </xsl:text><span class="Recipe-factPer"><xsl:value-of select="@per"/></span></xsl:if>'
+            .'</dd></div>';
+
         $step = $config->tags->add('RECIPE_STEP');
         $step->template = '<li class="Recipe-step"><xsl:apply-templates/></li>';
 

@@ -10,6 +10,19 @@ import Stream from 'flarum/common/utils/Stream';
 import extractText from 'flarum/common/utils/extractText';
 import { emptyFields, isEmpty, parse, serialize, type RecipeFields } from '../common/source';
 
+/** A field the admin defined (src/Fields.php), as the forum payload carries it. */
+export interface FieldDefinition {
+  key: string;
+  label: string;
+  unit: string;
+  scope: 'serving' | 'recipe';
+}
+
+export function fieldDefinitions(): FieldDefinition[] {
+  const list = app.forum.attribute<FieldDefinition[]>('recipesFields');
+  return Array.isArray(list) ? list : [];
+}
+
 export interface RecipeModalAttrs extends IInternalModalAttrs {
   /** The block's text when editing one; absent when inserting. */
   body?: string;
@@ -29,15 +42,24 @@ function t(key: string): string {
  * that text is put into the post differs.
  */
 export default class RecipeModal extends FormModal<RecipeModalAttrs> {
-  fields: Record<keyof RecipeFields, Stream<string>> = {} as any;
+  fields: Record<Exclude<keyof RecipeFields, 'extra'>, Stream<string>> = {} as any;
+  definitions: FieldDefinition[] = [];
+  extra: Record<string, Stream<string>> = {};
+  /** Header values with no box in the form (a field since removed): carried through untouched. */
+  hidden: Record<string, string> = {};
 
   oninit(vnode: any) {
     super.oninit(vnode);
 
-    const initial = this.attrs.body ? parse(this.attrs.body) : emptyFields();
+    this.definitions = fieldDefinitions();
+    const keys = this.definitions.map((field) => field.key);
+    const initial = this.attrs.body ? parse(this.attrs.body, keys) : emptyFields();
+
     for (const key of Object.keys(initial) as (keyof RecipeFields)[]) {
-      this.fields[key] = Stream(initial[key]);
+      if (key !== 'extra') this.fields[key] = Stream(initial[key] as string);
     }
+    for (const field of this.definitions) this.extra[field.key] = Stream(initial.extra[field.key] ?? '');
+    for (const [key, value] of Object.entries(initial.extra)) if (!keys.includes(key)) this.hidden[key] = value;
   }
 
   className() {
@@ -73,6 +95,26 @@ export default class RecipeModal extends FormModal<RecipeModalAttrs> {
               <input id="recipe-cook" className="FormControl" placeholder={t('time_placeholder')} bidi={f.cook} />
             </div>
           </div>
+
+          {this.definitions.length ? (
+            <div className="RecipeModal-row RecipeModal-facts">
+              {this.definitions.map((field) => (
+                <div className="Form-group">
+                  <label for={`recipe-field-${field.key}`}>
+                    {field.label}
+                    {field.unit ? ` (${field.unit})` : ''}
+                  </label>
+                  <input
+                    id={`recipe-field-${field.key}`}
+                    className="FormControl"
+                    inputmode="decimal"
+                    placeholder={t(field.scope === 'recipe' ? 'field_recipe' : 'field_serving')}
+                    bidi={this.extra[field.key]}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : null}
 
           <div className="Form-group">
             <label for="recipe-image">{t('image')}</label>
@@ -115,8 +157,24 @@ export default class RecipeModal extends FormModal<RecipeModalAttrs> {
   onsubmit(e: SubmitEvent) {
     e.preventDefault();
 
-    const values = {} as RecipeFields;
-    for (const key of Object.keys(this.fields) as (keyof RecipeFields)[]) values[key] = this.fields[key]();
+    const values = { extra: {} } as RecipeFields;
+    for (const key of Object.keys(this.fields) as Exclude<keyof RecipeFields, 'extra'>[]) values[key] = this.fields[key]();
+
+    for (const field of this.definitions) {
+      const value = this.extra[field.key]().trim();
+      if (!value) continue;
+      // Mirrors Fields::number(): the server shows nothing it cannot read.
+      if (!/^\d{1,7}(?:[.,]\d{1,3})?$/.test(value)) {
+        this.alertAttrs = {
+          type: 'error',
+          content: extractText(app.translator.trans('ernestdefoe-recipes.lib.composer.invalid_number', { field: field.label })),
+        };
+        return;
+      }
+      values.extra[field.key] = value;
+    }
+    // The admin's fields first, in their order; values with no box after them.
+    Object.assign(values.extra, this.hidden);
 
     if (isEmpty(values)) {
       this.alertAttrs = { type: 'error', content: t('empty') };

@@ -16,6 +16,7 @@ use ErnestDefoe\Recipes\Http\BasedOnRedirect;
 use ErnestDefoe\Recipes\Http\RecipesPageContent;
 use ErnestDefoe\Recipes\Index\KeepIndexCurrent;
 use ErnestDefoe\Recipes\Formatter\Render;
+use ErnestDefoe\Recipes\Fields;
 use ErnestDefoe\Recipes\Seo\RecipeJsonLd;
 use Flarum\Extend;
 
@@ -47,7 +48,17 @@ return [
         ->command(ReindexCommand::class),
 
     (new Extend\Frontend('admin'))
-        ->js(__DIR__.'/js/dist/admin.js'),
+        ->js(__DIR__.'/js/dist/admin.js')
+        ->css(__DIR__.'/less/admin.less'),
+
+    /*
+     * The admin's fields, for the recipe form. Normalised on the way out
+     * (Fields::normalize), so the browser only ever sees valid definitions,
+     * and small: at most 20 short entries, on every page.
+     */
+    (new Extend\Settings())
+        ->default(Fields::SETTING, '[]')
+        ->serializeToForum('recipesFields', Fields::SETTING, fn ($value) => Fields::normalize((string) $value)),
 
     new Extend\Locales(__DIR__.'/locale'),
 

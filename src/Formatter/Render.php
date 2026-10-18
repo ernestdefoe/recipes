@@ -2,6 +2,7 @@
 
 namespace ErnestDefoe\Recipes\Formatter;
 
+use ErnestDefoe\Recipes\Fields;
 use ErnestDefoe\Recipes\Recipe;
 use Flarum\Http\UrlGenerator;
 use Psr\Http\Message\ServerRequestInterface;
@@ -24,7 +25,7 @@ class Render
      * optional class parameter with its default, so a nullable here was null
      * on every real forum and the link ignored a subfolder install.
      */
-    public function __construct(private readonly Labels $labels, private readonly UrlGenerator $url)
+    public function __construct(private readonly Labels $labels, private readonly UrlGenerator $url, private readonly Fields $fields)
     {
     }
 
@@ -35,7 +36,7 @@ class Render
         }
 
         foreach (Blocks::elements($dom) as $element) {
-            $recipe = Recipe::parse(Blocks::body($element));
+            $recipe = Recipe::parse(Blocks::body($element), $this->fields->keys());
 
             // Nothing recognisable: leave the source showing rather than an empty card.
             if (! $recipe->isEmpty()) {
@@ -100,6 +101,29 @@ class Render
         if ($recipe->prep !== null && $recipe->cook !== null) {
             $element->setAttribute('total', $this->duration((int) $recipe->total()));
             $element->setAttribute('l_total', $this->t('total'));
+        }
+
+        if ($recipe->fields) {
+            $facts = $this->node($dom, 'RECIPE_FACTS');
+            // In the admin's order, and only fields that still exist.
+            foreach ($this->fields->all() as $field) {
+                if (! isset($recipe->fields[$field['key']])) {
+                    continue;
+                }
+                $value = $recipe->fields[$field['key']];
+                $facts->appendChild($this->node($dom, 'RECIPE_FACT', [
+                    'key' => $field['key'],
+                    'label' => $field['label'],
+                    'value' => Fields::display($value),
+                    'q' => Fields::display($value),
+                    'unit' => $field['unit'],
+                    'scale' => $field['scope'] === 'recipe' ? '1' : null,
+                    'per' => $field['scope'] === 'serving' && $recipe->servings !== null ? $this->t('per_serving') : null,
+                ]));
+            }
+            if ($facts->hasChildNodes()) {
+                $add($facts);
+            }
         }
 
         if ($recipe->description !== '') {

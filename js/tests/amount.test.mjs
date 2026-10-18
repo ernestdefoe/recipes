@@ -1,7 +1,7 @@
 // Scaled amounts, as a cook would write them. Runs against the compiled
 // src/common/amount.ts (see "test" in package.json).
 import assert from 'node:assert/strict';
-import { decimal, fraction, isPlural, matchCase } from '../../.test-build/amount.js';
+import { decimal, fraction, isPlural, matchCase, measure } from '../../.test-build/amount.js';
 
 const fractions = [
   [3, '3'],
@@ -32,5 +32,11 @@ assert.equal(isPlural(1, 2), true);
 
 assert.equal(matchCase('cup', 'Cups'), 'Cup');
 assert.equal(matchCase('cups', 'cup'), 'cups');
+
+// Field values are measurements: exact, never rounded to a nice number.
+assert.equal(measure(123, 'en'), '123');
+assert.equal(measure(123 * 1.5, 'en'), '184.5');
+assert.equal(measure(12.345, 'de'), '12,345');
+assert.equal(measure(0.1 + 0.2, 'en'), '0.3');
 
 console.log('amount: ok');

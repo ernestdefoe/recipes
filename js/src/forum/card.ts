@@ -1,6 +1,6 @@
 import app from 'flarum/forum/app';
 import extractText from 'flarum/common/utils/extractText';
-import { format, isPlural, matchCase } from '../common/amount';
+import { format, isPlural, matchCase, measure } from '../common/amount';
 import { addRemix } from './remix';
 import { related } from './related';
 
@@ -32,12 +32,24 @@ export default function decorate(root: HTMLElement | null | undefined, post?: an
     card.dataset[READY] = '1';
 
     addPrint(card);
+    localiseFacts(card);
     if (post) {
       addRemix(card, post);
       related(card, Number(post.id()));
     }
     addServings(card);
     card.querySelectorAll<HTMLElement>('.Recipe-timer[data-seconds]').forEach(addTimer);
+  });
+}
+
+/* ───────────────────────────── fields ───────────────────────────── */
+
+/** "12.5" → "12,5" for a German reader; the server writes the plain number. */
+function localiseFacts(card: HTMLElement): void {
+  const locale = app.translator.getLocale?.() || undefined;
+  card.querySelectorAll<HTMLElement>('.Recipe-factValue').forEach((value) => {
+    const q = parseFloat(value.dataset.q || '');
+    if (Number.isFinite(q)) value.textContent = measure(q, locale);
   });
 }
 
@@ -93,6 +105,12 @@ function addServings(card: HTMLElement): void {
 
 function scale(card: HTMLElement, factor: number): void {
   const locale = app.translator.getLocale?.() || undefined;
+
+  // The admin's fields: whole-recipe values follow the servings, per-serving ones do not.
+  card.querySelectorAll<HTMLElement>('.Recipe-factValue[data-scale]').forEach((value) => {
+    const q = parseFloat(value.dataset.q || '');
+    if (Number.isFinite(q)) value.textContent = measure(q * factor, locale);
+  });
 
   card.querySelectorAll<HTMLElement>('.Recipe-ingredient[data-q]').forEach((item) => {
     const qty = item.querySelector<HTMLElement>('.Recipe-qty');

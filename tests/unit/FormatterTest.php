@@ -60,6 +60,17 @@ class FormatterTest extends TestCase
         return $translator;
     }
 
+    private function fields(): \ErnestDefoe\Recipes\Fields
+    {
+        $settings = $this->createStub(\Flarum\Settings\SettingsRepositoryInterface::class);
+        $settings->method('get')->willReturn(json_encode([
+            ['key' => 'protein', 'label' => 'Protein', 'unit' => 'g', 'scope' => 'serving', 'schema' => 'protein'],
+            ['key' => 'phe', 'label' => 'PHE', 'unit' => 'mg', 'scope' => 'recipe'],
+        ]));
+
+        return new \ErnestDefoe\Recipes\Fields($settings);
+    }
+
     private function urls(): \Flarum\Http\UrlGenerator
     {
         $routes = $this->createStub(\Flarum\Http\RouteCollectionUrlGenerator::class);
@@ -75,7 +86,7 @@ class FormatterTest extends TestCase
         [$parser, $renderer] = $this->formatter($scribe);
         $xml = $parser->parse($text);
 
-        return $renderer->render((new Render(new Labels($this->translator()), $this->urls()))($renderer, null, $xml));
+        return $renderer->render((new Render(new Labels($this->translator()), $this->urls(), $this->fields()))($renderer, null, $xml));
     }
 
     private const MARKDOWN = <<<'TXT'
@@ -188,7 +199,7 @@ TXT;
         [$parser, $renderer] = $this->formatter(false);
         $xml = $parser->parse('Just **a** post with [b]recipe[/b] in it.');
 
-        $this->assertSame($xml, (new Render(new Labels($this->translator()), $this->urls()))($renderer, null, $xml));
+        $this->assertSame($xml, (new Render(new Labels($this->translator()), $this->urls(), $this->fields()))($renderer, null, $xml));
     }
 
     public function test_a_variant_links_to_its_original_and_carries_raw_times(): void
@@ -197,5 +208,32 @@ TXT;
 
         $this->assertStringContainsString('data-prep="600" data-cook="3600" data-based-on="42"', $out);
         $this->assertStringContainsString('<p class="Recipe-basedOn"><i class="icon fas fa-code-branch" aria-hidden="true"></i> <a href="/recipes/from/42">based_on</a></p>', $out);
+    }
+
+    public function test_the_admins_fields_show_in_their_order_with_units(): void
+    {
+        $out = $this->render("[recipe]\ntitle: Soup\nservings: 2\nphe: 340\nprotein: 12.50\nretired: 9\n[/recipe]");
+
+        $this->assertStringContainsString(
+            '<dl class="Recipe-facts">'
+            .'<div class="Recipe-fact" data-key="protein"><dt>Protein</dt><dd><span class="Recipe-factValue" data-q="12.5">12.5</span> <span class="Recipe-factUnit">g</span> <span class="Recipe-factPer">per_serving</span></dd></div>'
+            .'<div class="Recipe-fact" data-key="phe"><dt>PHE</dt><dd><span class="Recipe-factValue" data-q="340" data-scale="1">340</span> <span class="Recipe-factUnit">mg</span></dd></div>'
+            .'</dl>',
+            $out
+        );
+        $this->assertStringNotContainsString('retired', $out, 'a field the admin removed is not shown');
+    }
+
+    public function test_field_labels_are_text_not_markup(): void
+    {
+        $settings = $this->createStub(\Flarum\Settings\SettingsRepositoryInterface::class);
+        $settings->method('get')->willReturn(json_encode([['key' => 'x', 'label' => '<img src=x onerror=alert(1)>', 'unit' => '"><b>']]));
+        [$parser, $renderer] = $this->formatter(false);
+        $xml = $parser->parse("[recipe]\ntitle: T\nx: 1\n[/recipe]");
+        $out = $renderer->render((new Render(new Labels($this->translator()), $this->urls(), new \ErnestDefoe\Recipes\Fields($settings)))($renderer, null, $xml));
+
+        $this->assertStringNotContainsString('<img src=x', $out);
+        $this->assertStringNotContainsString('<b>', $out);
+        $this->assertStringContainsString('&lt;img src=x onerror=alert(1)&gt;', $out);
     }
 }

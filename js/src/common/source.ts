@@ -18,17 +18,23 @@ export interface RecipeFields {
   description: string;
   ingredients: string;
   steps: string;
+  /**
+   * The admin's own fields (protein, calories, …) by key, as typed. Also any
+   * other key found in the header — a field since removed — so editing a
+   * recipe never drops a value nobody can see.
+   */
+  extra: Record<string, string>;
 }
 
 /** Header key in the text → field. `based-on` is the one whose spelling differs. */
 const KEYS = { title: 'title', servings: 'servings', prep: 'prep', cook: 'cook', image: 'image', 'based-on': 'basedOn' } as const;
 
 export function emptyFields(): RecipeFields {
-  return { title: '', servings: '', prep: '', cook: '', image: '', basedOn: '', description: '', ingredients: '', steps: '' };
+  return { title: '', servings: '', prep: '', cook: '', image: '', basedOn: '', description: '', ingredients: '', steps: '', extra: {} };
 }
 
 /** Text → fields. Mirrors the reader in src/Recipe.php: header, text, two sections. */
-export function parse(body: string): RecipeFields {
+export function parse(body: string, fieldKeys: string[] = []): RecipeFields {
   const fields = emptyFields();
   const description: string[] = [];
   const ingredients: string[] = [];
@@ -51,9 +57,13 @@ export function parse(body: string): RecipeFields {
         continue;
       }
 
-      const kv = /^(title|servings|prep|cook|image|based-on)\s*:\s*(.*)$/i.exec(line);
-      if (kv) {
-        fields[KEYS[kv[1].toLowerCase() as keyof typeof KEYS]] = kv[2].trim();
+      // Mirrors src/Recipe.php: built-in keys, the forum's field keys, and any
+      // other key once a header has begun.
+      const kv = /^([a-z][a-z0-9-]{0,29})\s*:\s*(.*)$/i.exec(line);
+      const key = kv?.[1].toLowerCase() ?? '';
+      if (kv && (key in KEYS || fieldKeys.includes(key) || seen)) {
+        if (key in KEYS) fields[KEYS[key as keyof typeof KEYS]] = kv[2].trim();
+        else fields.extra[key] = kv[2].trim();
         seen = true;
         continue;
       }
@@ -87,14 +97,21 @@ export function parse(body: string): RecipeFields {
  * with no fields set does not start with a stray blank line.
  */
 export function serialize(input: RecipeFields): string {
-  const fields = { ...input };
-  for (const key of Object.keys(fields) as (keyof RecipeFields)[]) fields[key] = unclose(fields[key]);
+  const fields = { ...input, extra: { ...input.extra } };
+  for (const key of Object.keys(fields) as (keyof RecipeFields)[]) {
+    if (key !== 'extra') (fields as any)[key] = unclose(fields[key] as string);
+  }
 
   const out: string[] = [];
 
   for (const [key, field] of Object.entries(KEYS)) {
     const value = oneLine(fields[field]);
     if (value) out.push(`${key}: ${value}`);
+  }
+
+  for (const [key, raw] of Object.entries(fields.extra)) {
+    const value = oneLine(unclose(raw));
+    if (value && /^[a-z][a-z0-9-]{0,29}$/.test(key) && !(key in KEYS)) out.push(`${key}: ${value}`);
   }
 
   const description = fields.description.trim();

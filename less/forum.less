@@ -69,6 +69,44 @@
   }
 }
 
+// The admin's fields (protein, calories, …): a second row, quieter than the times.
+.Recipe-facts {
+  order: 4;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+  width: 100%;
+  margin: 10px 0 0;
+  padding-top: 10px;
+  border-top: 1px dashed var(--control-bg);
+
+  dt {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted-color);
+  }
+
+  dd {
+    margin: 0;
+  }
+}
+
+.Recipe-factValue {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+
+  .Recipe--scaled &[data-scale] {
+    color: var(--primary-color);
+  }
+}
+
+.Recipe-factPer {
+  font-size: 0.85em;
+  color: var(--muted-color);
+}
+
 .Recipe-servings--interactive {
   display: inline-flex;
   align-items: center;

@@ -55,4 +55,17 @@ const variant = parse('title: Vegan pancakes\nbased-on: 42\n\n[steps]\nStir\n[/s
 assert.equal(variant.basedOn, '42');
 assert.equal(serialize(variant), 'title: Vegan pancakes\nbased-on: 42\n\n[steps]\nStir\n[/steps]');
 
+// The admin's fields: read when known, and an unknown key in a header (a field
+// since removed) survives an edit instead of being dropped.
+const withFields = parse('title: Soup\nprotein: 12.5\nretired: 9\n\nNice.', ['protein']);
+assert.deepEqual(withFields.extra, { protein: '12.5', retired: '9' });
+assert.equal(withFields.description, 'Nice.');
+assert.equal(serialize(withFields), 'title: Soup\nprotein: 12.5\nretired: 9\n\nNice.');
+
+// A note at the very top is not a header.
+assert.equal(parse('Note: best cold\n\n[steps]\nStir\n[/steps]').description, 'Note: best cold');
+
+// Keys that could break the format are never written.
+assert.equal(serialize({ ...emptyFields(), title: 'T', extra: { 'bad key': '1', title: 'x', ok: '2' } }), 'title: T\nok: 2');
+
 console.log('source: ok');
