@@ -76,16 +76,16 @@ ernestdefoe-recipes:
   admin:
     fields:
       title: Recipe fields
-      help: "Extra numbers your community records on each recipe, such as calories, protein or PHE. Authors fill them in on the recipe form and readers see them on the card. Drag to reorder."
+      help: "Extra numbers your community records on each recipe, such as calories, protein or PHE. Authors fill them in on the recipe form and readers see them on the card. A per-serving value stays the same when a reader changes the servings; a whole-recipe value scales with them. Drag to reorder."
       label: Label
       label_placeholder: Protein
       key: Key
-      key_help: "Written into the recipe text as \"key: value\". Lower case, letters, numbers and dashes."
+      key_help: "Each field's key is written into the recipe text as \"key: value\": lower-case letters, numbers and dashes, starting with a letter."
       unit: Unit
       unit_placeholder: g
       scope: Value is
       scope_serving: Per serving
-      scope_recipe: For the whole recipe (scales with servings)
+      scope_recipe: Whole recipe
       schema: Search engines
       schema_none: Card only
       schema_options:

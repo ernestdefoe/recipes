@@ -57,6 +57,25 @@ link too, as schema.org `isBasedOn`.
 
 ![An original with its variants, and a variant naming its original](.github/screenshots/variants.png)
 
+## Your own fields: protein, PHE, calories…
+
+Every community counts something different. In the admin panel you define the
+numbers your recipes should carry, such as calories, protein, or the PHE someone
+on a PKU diet has to track, each with a label and a unit, dragged into the order
+you want.
+
+For each field you choose whether its value is **per serving**, so it stays the
+same when a reader changes the servings, or **for the whole recipe**, so it
+scales with them. Values are shown exactly as entered, never rounded to a
+"nice" number. Link a field to a schema.org nutrition property (calories,
+protein, fat, carbohydrate, sugar, fibre, sodium…) and search engines get it,
+per serving, as the recipe's nutrition information. A field with no schema.org
+equivalent, like PHE, is shown on the card only.
+
+![A recipe card with its fields](.github/screenshots/fields-card.png)
+
+![Defining fields in the admin panel](.github/screenshots/fields-admin.png)
+
 ## What authors get
 
 A **Recipe** button in the composer opens a form: title, servings, prep and cook
@@ -106,7 +125,7 @@ Cook each side [2m] until golden.
 ```
 
 A variant adds `based-on: 123`, the post id of the original. Remix writes it
-for you.
+for you. Your own fields are lines like `protein: 6.5`, using each field's key.
 
 Recipe text is plain text: Markdown and BBCode inside a recipe are shown as
 written.
@@ -128,7 +147,8 @@ composer require ernestdefoe/recipes
 php flarum cache:clear
 ```
 
-Enable **Recipes** in the admin panel. There are no settings.
+Enable **Recipes** in the admin panel. If your community records numbers on its
+recipes, define them on the extension's page.
 
 Recipes keeps a small index of where recipes are, so the directory and variant
 links never have to read every post. It is filled when the extension is enabled

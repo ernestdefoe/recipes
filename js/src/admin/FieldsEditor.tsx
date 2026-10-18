@@ -130,6 +130,7 @@ export default class FieldsEditor extends Component<Attrs> {
       <div className="Form-group RecipeFields">
         <label>{t('title')}</label>
         <div className="helpText">{t('help')}</div>
+        <div className="helpText">{t('key_help')}</div>
 
         <ul className="RecipeFields-list">{this.fields.map((field) => this.row(field))}</ul>
         {this.fields.length ? null : <p className="RecipeFields-empty">{t('empty')}</p>}
@@ -244,7 +245,7 @@ export default class FieldsEditor extends Component<Attrs> {
           }}
         />
 
-        {error ? <p className="RecipeFields-error">{error}</p> : <p className="helpText RecipeFields-keyHelp">{t('key_help')}</p>}
+        {error ? <p className="RecipeFields-error">{error}</p> : null}
       </li>
     );
   }

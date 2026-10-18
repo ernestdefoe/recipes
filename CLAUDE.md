@@ -21,6 +21,9 @@
 - Variants store `based-on: <post id>`. The card links through `/recipes/from/{id}`, which resolves visibility as the visitor; `forum/related.ts` names the original and lists variants with ONE request per page.
 - Remix rebuilds the text from the rendered card (data attributes carry raw times and the original's id), so anyone may remix what they can read. Its code is a lazy chunk fetched on click.
 - `flarum.reg.asyncModuleImport` takes ONE path string (`flarum/forum/components/X`), not namespace + id.
+- Custom fields (`src/Fields.php`): ONE JSON setting, validated on every READ (the settings endpoint accepts any string). Values are numbers only, stored as header lines in the recipe text; a header key not defined (a removed field) is kept hidden and survives edits (`source.ts` carries it). Field values are never rounded (`amount.ts` `measure()`, not `decimal()`, which rounds to 5).
+- Admin field editor: core REMOUNTS a customSetting component when its setting first changes. Never keep state that must survive that in the instance (it froze new rows' keys); derive it from the values. Mithril keys must be stable ids, not editable values (focus loss). LESS evaluates `a / b` as division: `grid-column: 2 / 3` silently vanished.
+- An input `pattern` is compiled with the `v` flag: escape `-` inside a character class.
 - forum.js loads on every page. The card, the form and the preview are lazy chunks with namespaced ids.
 
 ## Testing
