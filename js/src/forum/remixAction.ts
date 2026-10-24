@@ -37,7 +37,8 @@ function listLines(card: HTMLElement, kind: 'ingredients' | 'steps'): string {
     }
 
     let text = '';
-    li.childNodes.forEach((node) => {
+    // The line's own text, inside the tick's label once the card is decorated.
+    (li.querySelector('.Recipe-checkText') ?? li).childNodes.forEach((node) => {
       if (node instanceof HTMLElement && node.classList.contains('Recipe-timer')) {
         text += `[${seconds(node.dataset.seconds)}]`;
       } else if (node instanceof HTMLElement) {

@@ -27,10 +27,12 @@ function t(key: string, params?: Record<string, string>): string {
 export default function decorate(root: HTMLElement | null | undefined, post?: any): void {
   if (!root) return;
 
-  root.querySelectorAll<HTMLElement>('.Recipe:not(.Recipe--source)').forEach((card) => {
+  root.querySelectorAll<HTMLElement>('.Recipe:not(.Recipe--source)').forEach((card, index) => {
     if (card.dataset[READY]) return;
     card.dataset[READY] = '1';
 
+    // First, while the lists still hold exactly the text the server wrote.
+    addChecks(card, post ? `${post.id()}:${index}` : null);
     addPrint(card);
     localiseFacts(card);
     if (post) {
@@ -40,6 +42,135 @@ export default function decorate(root: HTMLElement | null | undefined, post?: an
     addServings(card);
     card.querySelectorAll<HTMLElement>('.Recipe-timer[data-seconds]').forEach(addTimer);
   });
+}
+
+/* ───────────────────────────── ticks ───────────────────────────── */
+
+/**
+ * A checkbox on every ingredient and step, to keep your place while cooking.
+ *
+ * Kept in this browser only (nothing is sent anywhere, so guests get it too),
+ * per post and card, by POSITION among the ingredients or steps: scaling the
+ * servings rewrites an amount, never which line it is. Forgotten after a day
+ * without a tick, and as soon as the recipe's lists change, when a position
+ * would point at a different line.
+ */
+const TICKS = 'recipes-ticks:';
+const TICKS_TTL = 24 * 3600 * 1000;
+
+interface Ticks {
+  h: number;
+  t: number;
+  i: number[];
+  s: number[];
+}
+
+function store(): Storage | null {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+/** A cheap fingerprint of the lists' text: an edited recipe starts unticked. */
+function fingerprint(card: HTMLElement): number {
+  let hash = 5381;
+  const text = Array.from(card.querySelectorAll('.Recipe-list'), (list) => list.textContent).join('\n');
+  for (let i = 0; i < text.length; i++) hash = ((hash << 5) + hash + text.charCodeAt(i)) | 0;
+  return hash;
+}
+
+let swept = false;
+
+/** Once per page: drop every expired card's ticks, so old recipes leave nothing behind. */
+function sweep(storage: Storage): void {
+  if (swept) return;
+  swept = true;
+  try {
+    for (let i = storage.length - 1; i >= 0; i--) {
+      const key = storage.key(i);
+      if (!key?.startsWith(TICKS)) continue;
+      const saved = JSON.parse(storage.getItem(key) || 'null');
+      if (!saved || Date.now() - saved.t > TICKS_TTL) storage.removeItem(key);
+    }
+  } catch {}
+}
+
+function addChecks(card: HTMLElement, id: string | null): void {
+  const kinds = { i: card.querySelectorAll<HTMLElement>('.Recipe-ingredient'), s: card.querySelectorAll<HTMLElement>('.Recipe-step') };
+  if (!kinds.i.length && !kinds.s.length) return;
+
+  const storage = id ? store() : null;
+  const key = TICKS + id;
+  const hash = fingerprint(card);
+  let saved: Ticks | null = null;
+
+  if (storage) {
+    sweep(storage);
+    try {
+      saved = JSON.parse(storage.getItem(key) || 'null');
+    } catch {}
+    if (saved && (saved.h !== hash || Date.now() - saved.t > TICKS_TTL)) saved = null;
+  }
+
+  const boxes: HTMLInputElement[] = [];
+  const reset = document.createElement('button');
+  reset.type = 'button';
+  reset.className = 'Button Button--link Recipe-untick';
+  reset.textContent = t('untick');
+  reset.title = t('untick_label');
+
+  const save = () => {
+    const ticks: Ticks = { h: hash, t: Date.now(), i: [], s: [] };
+    boxes.forEach((box) => box.checked && ticks[box.dataset.kind as 'i' | 's'].push(Number(box.dataset.index)));
+    reset.hidden = !ticks.i.length && !ticks.s.length;
+    if (!storage) return;
+    try {
+      if (reset.hidden) storage.removeItem(key);
+      else storage.setItem(key, JSON.stringify(ticks));
+    } catch {
+      // Full or blocked: the ticks still work until the page is left.
+    }
+  };
+
+  (Object.keys(kinds) as ('i' | 's')[]).forEach((kind) => {
+    kinds[kind].forEach((item, index) => {
+      const box = document.createElement('input');
+      box.type = 'checkbox';
+      box.className = 'Recipe-check';
+      box.dataset.kind = kind;
+      box.dataset.index = String(index);
+      box.checked = !!saved?.[kind]?.includes(index);
+
+      // The row is the label: a tap anywhere on the line ticks it. A timer
+      // inside stays its own button (a label never activates on one).
+      const label = document.createElement('label');
+      label.className = 'Recipe-checkLabel';
+      const text = document.createElement('span');
+      text.className = 'Recipe-checkText';
+      text.append(...Array.from(item.childNodes));
+      label.append(box, text);
+      item.append(label);
+
+      const mark = () => item.classList.toggle('is-done', box.checked);
+      box.addEventListener('change', () => {
+        mark();
+        save();
+      });
+      mark();
+      boxes.push(box);
+    });
+  });
+
+  reset.addEventListener('click', () => {
+    boxes.forEach((box) => {
+      box.checked = false;
+      box.dispatchEvent(new Event('change'));
+    });
+  });
+  reset.hidden = !boxes.some((box) => box.checked);
+  card.querySelector('.Recipe-sectionTitle')?.append(reset);
 }
 
 /* ───────────────────────────── fields ───────────────────────────── */
@@ -298,6 +429,8 @@ function print(card: HTMLElement): void {
 
   const copy = card.cloneNode(true) as HTMLElement;
   copy.classList.add('Recipe--print');
+  // Paper gets the whole recipe, not the place you had reached in it.
+  copy.querySelectorAll('.is-done').forEach((item) => item.classList.remove('is-done'));
   root.appendChild(copy);
 
   const source = document.createElement('p');

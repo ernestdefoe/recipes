@@ -25,12 +25,21 @@ and [Scribe](https://github.com/ernestdefoe/scribe).
 - **Timers.** A step that says `Bake for [25m]` shows a 25 min button. One click
   starts it, the next pauses, and it beeps when it is done. It counts against
   the clock, so a background tab doesn't slow it down.
+- **Ticks.** Every ingredient and step has a checkbox, so you can follow what
+  is already in the bowl. Tap the line to tick it; ticked lines are struck
+  through, and a ticked step's number becomes a check mark. Ticks are kept in
+  the reader's own browser (guests too), stay on the same line when the
+  servings change, survive a reload, and are forgotten after a day or as soon
+  as the recipe is edited. **Clear ticks** unticks the lot. Printing leaves
+  them out.
 - **Print.** The print button prints just the recipe, at the servings the reader
   picked, with the page address underneath. Nothing else from the forum.
 - **Everything without JavaScript, too.** The card is server-rendered HTML, so
   emails, feed readers and search engines see the whole recipe.
 
 ![Doubled to 8 servings with a timer running](.github/screenshots/scaled-and-timer.png)
+
+![Ingredients and a step ticked off, at 8 servings](.github/screenshots/ticks.png)
 
 | On a phone | Printed |
 |---|---|
@@ -91,6 +100,30 @@ and delete; double-click it, or press **Edit**, to change it. In the plain
 composer, put the cursor inside a recipe and press the button to edit it.
 
 The composer preview shows the card as you type.
+
+### Photos
+
+Drop a photo on the form, or choose one: JPEG, PNG or WebP up to 10 MB. The
+forum re-encodes it as WebP (at most 1600 px), which strips everything but the
+pixels, including a phone photo's location, and stores it under a random name
+in `public/assets/recipes` (or wherever a storage driver puts the
+`ernestdefoe-recipes` disk). Who may upload is the **Upload recipe photos**
+permission, Members by default. Uploads are limited to 10 a minute and 100 a
+day per member.
+
+A photo that never makes it into a saved post is deleted after a day, by the
+daily `recipes:prune-photos` task (and whenever its uploader uploads again). A
+photo edited out of a recipe, or whose post is deleted, is deleted too, unless
+a variant still shows it.
+
+**Allow images from web addresses** (in the extension's settings, on by
+default) keeps the old way of pasting an image's address. Turn it off and only
+uploaded photos are accepted: the address box disappears and the server refuses
+a recipe that links an image from another site when it is saved. Recipes posted
+before keep their images, and an edit or a remix may keep an image already shown
+on the forum; nothing is rewritten.
+
+<img src=".github/screenshots/photo-upload.png" width="420" alt="Uploading a photo in the recipe form">
 
 | The form | In Scribe |
 |---|---|

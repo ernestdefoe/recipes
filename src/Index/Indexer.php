@@ -16,11 +16,13 @@ use Illuminate\Database\ConnectionInterface;
  */
 final class Indexer
 {
-    public static function sync(ConnectionInterface $db, int $postId, ?string $xml): void
+    /** @return list<\ErnestDefoe\Recipes\Recipe> the post's recipes, as indexed */
+    public static function sync(ConnectionInterface $db, int $postId, ?string $xml): array
     {
         $rows = [];
+        $recipes = $xml !== null ? Blocks::recipes($xml) : [];
 
-        foreach ($xml !== null ? Blocks::recipes($xml) : [] as $position => $recipe) {
+        foreach ($recipes as $position => $recipe) {
             $rows[] = [
                 'post_id' => $postId,
                 'position' => $position,
@@ -41,6 +43,8 @@ final class Indexer
                 $db->table('recipe_cards')->insert($rows);
             }
         });
+
+        return $recipes;
     }
 
     /** Every recipe posted before the index existed. */

@@ -209,6 +209,50 @@
   }
 }
 
+// Ticks (forum/card.ts addChecks): the row is the checkbox's label.
+.Recipe-checkLabel {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.Recipe-check {
+  flex: none;
+  width: 1.05em;
+  height: 1.05em;
+  margin: 0.2em 0 0;
+  accent-color: var(--primary-color);
+  cursor: pointer;
+}
+
+.is-done > .Recipe-checkLabel > .Recipe-checkText {
+  color: var(--muted-color);
+  text-decoration: line-through;
+
+  .Recipe-qty {
+    color: inherit;
+  }
+}
+
+.Recipe-sectionTitle {
+  display: flex;
+  align-items: baseline;
+}
+
+.Recipe-untick {
+  margin-left: auto;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+
+  &[hidden] {
+    display: none;
+  }
+}
+
 .Recipe-list--steps {
   counter-reset: recipe-step;
 }
@@ -232,6 +276,30 @@
     font-weight: 700;
     line-height: 1.75em;
     text-align: center;
+    pointer-events: none;
+  }
+
+  // The number IS the checkbox: an invisible box over the circle, its focus a ring.
+  .Recipe-check {
+    position: absolute;
+    top: 7px;
+    left: 0;
+    width: 1.75em;
+    height: 1.75em;
+    margin: 0;
+    border-radius: 50%;
+    font-size: 0.85em;
+    appearance: none;
+
+    &:focus-visible {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
+    }
+  }
+
+  &.is-done::before {
+    content: "\2713";
+    background: var(--muted-color);
   }
 }
 
@@ -353,6 +421,52 @@ button.Recipe-timer {
 
 .RecipeModal-list {
   min-height: 120px;
+}
+
+// The photo: a preview, a drop zone (forum/RecipeModal.tsx), and maybe a web address.
+.RecipeModal-photoPreview {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+
+  img {
+    min-width: 0;
+    max-width: 100%;
+    max-height: 160px;
+    border-radius: var(--border-radius);
+    object-fit: cover;
+  }
+}
+
+.RecipeModal-drop {
+  position: relative;
+  align-self: stretch;
+  margin-bottom: 8px;
+  padding: 16px;
+  border: 2px dashed var(--muted-more-color);
+  border-radius: var(--border-radius);
+  color: var(--muted-color);
+  text-align: center;
+
+  &.is-dragging,
+  &:focus-within {
+    border-color: var(--primary-color);
+  }
+}
+
+// Visually hidden, still focusable: the dashed box shows its focus.
+.RecipeModal-file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.RecipeModal-choose {
+  color: var(--link-color);
+  font-weight: 600;
+  cursor: pointer;
 }
 
 // Variants: "Based on …" on a variant, the list of variants under an original.
@@ -572,6 +686,8 @@ button.Recipe-timer {
     .Recipe-remix,
     .Recipe-servings--interactive .Button,
     .Recipe-reset,
+    .Recipe-check,
+    .Recipe-untick,
     .Recipe-timer .icon {
       display: none !important;
     }

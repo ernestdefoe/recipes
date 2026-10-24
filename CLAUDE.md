@@ -24,6 +24,8 @@
 - Custom fields (`src/Fields.php`): ONE JSON setting, validated on every READ (the settings endpoint accepts any string). Values are numbers only, stored as header lines in the recipe text; a header key not defined (a removed field) is kept hidden and survives edits (`source.ts` carries it). Field values are never rounded (`amount.ts` `measure()`, not `decimal()`, which rounds to 5).
 - Admin field editor: core REMOUNTS a customSetting component when its setting first changes. Never keep state that must survive that in the instance (it froze new rows' keys); derive it from the values. Mithril keys must be stable ids, not editable values (focus loss). LESS evaluates `a / b` as division: `grid-column: 2 / 3` silently vanished.
 - An input `pattern` is compiled with the `v` flag: escape `-` inside a character class.
+- Ticks (`card.ts` addChecks) live in localStorage only, keyed `recipes-ticks:<post>:<card>`, by POSITION among ingredients/steps (scaling never moves them), dropped after 24 h or when the lists' text fingerprint changes. The row is a `<label>`; `remixAction.ts` reads `.Recipe-checkText`, not the li, once decorated.
+- Photos (`src/Photos`): uploads are judged by their bytes (getimagesize type) then re-encoded to WebP with `strip: true`, random hex names. A post may only show one of our uploads its saver uploaded, unless a recipe on the forum already shows it (`CheckImages`, on Saving). `recipe_photos.post_id` follows the index (`KeepIndexCurrent`); pruning matches `recipe_cards.image` by FILE NAME, never full URL (a moved forum keeps old URLs).
 - forum.js loads on every page. The card, the form and the preview are lazy chunks with namespaced ids.
 
 ## Testing

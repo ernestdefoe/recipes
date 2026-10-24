@@ -1,3 +1,4 @@
+import app from 'flarum/admin/app';
 import Admin from 'flarum/common/extenders/Admin';
 import FieldsEditor from './FieldsEditor';
 
@@ -7,9 +8,24 @@ import FieldsEditor from './FieldsEditor';
  * saves. An arrow function would lose that `this` silently.
  */
 export default [
-  new Admin().customSetting(function (this: any) {
-    return m(FieldsEditor, { stream: this.setting('ernestdefoe-recipes.fields', '[]') });
-  }),
+  new Admin()
+    .setting(() => ({
+      setting: 'ernestdefoe-recipes.image_urls',
+      type: 'boolean',
+      label: app.translator.trans('ernestdefoe-recipes.admin.settings.image_urls_label'),
+      help: app.translator.trans('ernestdefoe-recipes.admin.settings.image_urls_help'),
+    }))
+    .permission(
+      () => ({
+        icon: 'fas fa-camera',
+        label: app.translator.trans('ernestdefoe-recipes.admin.permissions.upload_photos'),
+        permission: 'ernestdefoe-recipes.uploadPhotos',
+      }),
+      'start'
+    )
+    .customSetting(function (this: any) {
+      return m(FieldsEditor, { stream: this.setting('ernestdefoe-recipes.fields', '[]') });
+    }),
 ];
 
 declare const m: import('mithril').Static;

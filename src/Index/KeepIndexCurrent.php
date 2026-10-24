@@ -3,6 +3,7 @@
 namespace ErnestDefoe\Recipes\Index;
 
 use ErnestDefoe\Recipes\Formatter\Blocks;
+use ErnestDefoe\Recipes\Photos\Photos;
 use Flarum\Post\CommentPost;
 use Flarum\Post\Event\Deleted;
 use Flarum\Post\Event\Posted;
@@ -19,7 +20,7 @@ use Illuminate\Database\ConnectionInterface;
  */
 class KeepIndexCurrent
 {
-    public function __construct(private readonly ConnectionInterface $db)
+    public function __construct(private readonly ConnectionInterface $db, private readonly Photos $photos)
     {
     }
 
@@ -40,11 +41,19 @@ class KeepIndexCurrent
         // The foreign key cascades too; this covers a database that ignores it (SQLite).
         $events->listen(Deleted::class, function (Deleted $e): void {
             $this->db->table('recipe_cards')->where('post_id', $e->post->id)->delete();
+            $this->photos->release((int) $e->post->id);
         });
     }
 
     private function index(CommentPost $post): void
     {
-        Indexer::sync($this->db, (int) $post->id, (string) $post->getParsedContentAttribute());
+        $id = (int) $post->id;
+        $recipes = Indexer::sync($this->db, $id, (string) $post->getParsedContentAttribute());
+
+        // Photos follow the index: the ones this post shows are its own, the
+        // ones it stopped showing go unless another recipe still shows them.
+        $names = $this->photos->namesIn(array_map(fn ($recipe) => $recipe->image, $recipes));
+        $this->photos->release($id, $names);
+        $this->photos->attach($id, $names);
     }
 }

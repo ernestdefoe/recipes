@@ -10,6 +10,8 @@
  */
 
 use ErnestDefoe\Recipes\Api\ListRecipesController;
+use ErnestDefoe\Recipes\Api\UploadPhotoController;
+use ErnestDefoe\Recipes\Console\PrunePhotosCommand;
 use ErnestDefoe\Recipes\Console\ReindexCommand;
 use ErnestDefoe\Recipes\Formatter\Configure;
 use ErnestDefoe\Recipes\Http\BasedOnRedirect;
@@ -17,8 +19,17 @@ use ErnestDefoe\Recipes\Http\RecipesPageContent;
 use ErnestDefoe\Recipes\Index\KeepIndexCurrent;
 use ErnestDefoe\Recipes\Formatter\Render;
 use ErnestDefoe\Recipes\Fields;
+use ErnestDefoe\Recipes\Photos\CheckImages;
+use ErnestDefoe\Recipes\Photos\Photos;
 use ErnestDefoe\Recipes\Seo\RecipeJsonLd;
+use Flarum\Api\Context;
+use Flarum\Api\Resource\ForumResource;
+use Flarum\Api\Schema;
 use Flarum\Extend;
+use Flarum\Foundation\Paths;
+use Flarum\Http\UrlGenerator;
+use Flarum\Post\Event\Saving;
+use Illuminate\Console\Scheduling\Event as ScheduledEvent;
 
 return [
     (new Extend\Frontend('forum'))
@@ -39,13 +50,37 @@ return [
         ->get('/recipes/from/{id:\d+}', 'recipes.from', BasedOnRedirect::class),
 
     (new Extend\Routes('api'))
-        ->get('/recipes', 'recipes.index', ListRecipesController::class),
+        ->get('/recipes', 'recipes.index', ListRecipesController::class)
+        ->post('/recipes/photos', 'recipes.photos.upload', UploadPhotoController::class),
 
     (new Extend\Event())
-        ->subscribe(KeepIndexCurrent::class),
+        ->subscribe(KeepIndexCurrent::class)
+        ->listen(Saving::class, CheckImages::class),
 
     (new Extend\Console())
-        ->command(ReindexCommand::class),
+        ->command(ReindexCommand::class)
+        ->command(PrunePhotosCommand::class)
+        ->schedule(PrunePhotosCommand::class, function (ScheduledEvent $event): void {
+            $event->daily();
+        }),
+
+    /*
+     * Uploaded photos (Photos\Photos): re-encoded WebP with random names, on
+     * a disk of their own so a storage driver can move them like any other.
+     */
+    (new Extend\Filesystem())
+        ->disk(Photos::DISK, fn (Paths $paths, UrlGenerator $url) => [
+            'root' => "$paths->public/assets/recipes",
+            'url' => $url->to('forum')->path('assets/recipes'),
+            'visibility' => 'public',
+        ]),
+
+    // Whether this visitor may upload: the form's drop zone. Permissions are already loaded, so no query.
+    (new Extend\ApiResource(ForumResource::class))
+        ->fields(fn () => [
+            Schema\Boolean::make('canUploadRecipePhotos')
+                ->get(fn ($forum, Context $context) => $context->getActor()->can(UploadPhotoController::PERMISSION)),
+        ]),
 
     (new Extend\Frontend('admin'))
         ->js(__DIR__.'/js/dist/admin.js')
@@ -58,6 +93,8 @@ return [
      */
     (new Extend\Settings())
         ->default(Fields::SETTING, '[]')
+        ->default(Photos::ALLOW_URLS, true)
+        ->serializeToForum('recipesImageUrls', Photos::ALLOW_URLS, 'boolval')
         ->serializeToForum('recipesFields', Fields::SETTING, fn ($value) => Fields::normalize((string) $value)),
 
     new Extend\Locales(__DIR__.'/locale'),
