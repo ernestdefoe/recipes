@@ -26,8 +26,6 @@ use Flarum\Api\Context;
 use Flarum\Api\Resource\ForumResource;
 use Flarum\Api\Schema;
 use Flarum\Extend;
-use Flarum\Foundation\Paths;
-use Flarum\Http\UrlGenerator;
 use Flarum\Post\Event\Saving;
 use Illuminate\Console\Scheduling\Event as ScheduledEvent;
 
@@ -69,11 +67,7 @@ return [
      * a disk of their own so a storage driver can move them like any other.
      */
     (new Extend\Filesystem())
-        ->disk(Photos::DISK, fn (Paths $paths, UrlGenerator $url) => [
-            'root' => "$paths->public/assets/recipes",
-            'url' => $url->to('forum')->path('assets/recipes'),
-            'visibility' => 'public',
-        ]),
+        ->disk(Photos::DISK, Photos::config(...)),
 
     // Whether this visitor may upload: the form's drop zone. Permissions are already loaded, so no query.
     (new Extend\ApiResource(ForumResource::class))

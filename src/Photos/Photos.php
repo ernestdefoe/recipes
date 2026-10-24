@@ -3,6 +3,10 @@
 namespace ErnestDefoe\Recipes\Photos;
 
 use Carbon\Carbon;
+use Flarum\Filesystem\FilesystemManager;
+use Flarum\Foundation\Paths;
+use Flarum\Http\UrlGenerator;
+use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Filesystem\Cloud;
 use Illuminate\Contracts\Filesystem\Factory;
 use Illuminate\Database\ConnectionInterface;
@@ -38,6 +42,9 @@ class Photos
 
     private const MAX_HEIGHT = 1600;
 
+    /** The shape of every name store() gives a photo. */
+    private const NAME = '/^[0-9a-f]{32}\.webp$/D';
+
     /** An unattached upload gets this long to end up in a saved post. */
     public const GRACE_HOURS = 24;
 
@@ -46,6 +53,37 @@ class Photos
     public function __construct(Factory $filesystems, private readonly ImageManager $images, private readonly ConnectionInterface $db)
     {
         $this->disk = $filesystems->disk(self::DISK);
+    }
+
+    /**
+     * The disk's local settings, declared in extend.php.
+     *
+     * @return array<string, string>
+     */
+    public static function config(Paths $paths, UrlGenerator $url): array
+    {
+        return [
+            'root' => "$paths->public/assets/recipes",
+            'url' => $url->to('forum')->path('assets/recipes'),
+            'visibility' => 'public',
+        ];
+    }
+
+    /**
+     * Purging the extension deletes every photo it stored. Called by the
+     * photos table's down(), so disabling alone keeps them.
+     *
+     * The disk is built here, not taken from the container: a purge runs with
+     * the extension already disabled, when extend.php's declaration is gone.
+     * The forum's storage driver for the disk still applies. Only names of the
+     * shape store() writes are deleted, so a driver pointed at a shared bucket
+     * loses nothing else.
+     */
+    public static function purge(Container $container): void
+    {
+        $disk = (new FilesystemManager($container, [self::DISK => self::config(...)], $container->make('flarum.filesystem.resolved_drivers')))->disk(self::DISK);
+
+        $disk->delete(preg_grep(self::NAME, $disk->files()));
     }
 
     /** Re-encode an uploaded file and record it; returns the photo's public URL. */
@@ -88,7 +126,7 @@ class Photos
 
         $name = substr($url, strlen($prefix));
 
-        return preg_match('/^[0-9a-f]{32}\.webp$/D', $name) ? $name : null;
+        return preg_match(self::NAME, $name) ? $name : null;
     }
 
     /**
