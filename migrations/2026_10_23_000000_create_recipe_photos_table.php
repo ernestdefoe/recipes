@@ -25,6 +25,8 @@ $migration = Migration::createTable('recipe_photos', function (Blueprint $table)
 
 $drop = $migration['down'];
 $migration['down'] = function (Builder $schema) use ($drop) {
+    // A migration closure is handed only the schema builder; Flarum's own
+    // resolve() helper is this same Container::getInstance() call.
     Photos::purge(Container::getInstance());
     $drop($schema);
 };

@@ -216,4 +216,30 @@ class PhotosTest extends TestCase
         $this->assertSame(1, $this->app()->getContainer()->make(Photos::class)->pruneAbandoned());
         $this->assertFalse($this->exists($body['url']));
     }
+    #[Test]
+    public function pruning_a_batch_costs_the_same_few_queries_however_many_photos()
+    {
+        $urls = [];
+        foreach (['a', 'b', 'c', 'd'] as $n) {
+            [, $body] = $this->upload(2, $this->file($this->png(), 'image/png', "$n.png"));
+            $urls[] = $body['url'];
+        }
+        $this->database()->table('recipe_photos')->update(['created_at' => Carbon::now()->subHours(25)]);
+        // One of them is shown by a recipe already: it is handed to that post, not deleted.
+        $this->database()->table('recipe_cards')->insert(['post_id' => 1, 'position' => 0, 'title' => 'Toast', 'image' => $urls[0]]);
+
+        $db = $this->database();
+        $db->flushQueryLog();
+        $db->enableQueryLog();
+        $deleted = $this->app()->getContainer()->make(Photos::class)->pruneAbandoned();
+        $queries = count($db->getQueryLog());
+        $db->disableQueryLog();
+
+        $this->assertSame(3, $deleted);
+        $this->assertLessThanOrEqual(4, $queries, 'select abandoned + one read + one hand-over + one delete');
+        $this->assertTrue($this->exists($urls[0]));
+        $this->assertFalse($this->exists($urls[3]));
+        $this->assertSame(1, (int) $db->table('recipe_photos')->value('post_id'));
+        $this->assertSame(1, $db->table('recipe_photos')->count());
+    }
 }

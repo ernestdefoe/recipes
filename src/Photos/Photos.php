@@ -188,20 +188,51 @@ class Photos
     {
         $deleted = 0;
 
-        foreach (array_unique($names) as $name) {
-            $holder = $this->db->table('recipe_cards')->where('image', 'like', '%/'.$name)->value('post_id');
-
-            if ($holder !== null) {
-                $this->db->table(self::TABLE)->where('name', $name)->update(['post_id' => $holder]);
-                continue;
-            }
-
-            $this->disk->delete($name);
-            $this->db->table(self::TABLE)->where('name', $name)->delete();
-            $deleted++;
+        // A batch at a time: one read, one delete and one hand-over per
+        // variant, instead of up to three queries a photo.
+        foreach (array_chunk(array_values(array_unique($names)), 100) as $batch) {
+            $deleted += $this->pruneBatch($batch);
         }
 
         return $deleted;
+    }
+
+    /** @param list<string> $names */
+    private function pruneBatch(array $names): int
+    {
+        $wanted = array_flip($names);
+        $holders = [];
+
+        $cards = $this->db->table('recipe_cards')
+            ->where(function ($query) use ($names) {
+                foreach ($names as $name) {
+                    $query->orWhere('image', 'like', '%/'.$name);
+                }
+            })
+            ->get(['post_id', 'image']);
+
+        foreach ($cards as $card) {
+            $name = substr((string) strrchr((string) $card->image, '/'), 1);
+
+            if (isset($wanted[$name])) {
+                $holders[$name] ??= (int) $card->post_id;
+            }
+        }
+
+        $handed = [];
+        foreach ($holders as $name => $postId) {
+            $handed[$postId][] = $name;
+        }
+        foreach ($handed as $postId => $kept) {
+            $this->db->table(self::TABLE)->whereIn('name', $kept)->update(['post_id' => $postId]);
+        }
+
+        if ($gone = array_values(array_diff($names, array_keys($holders)))) {
+            $this->disk->delete($gone);
+            $this->db->table(self::TABLE)->whereIn('name', $gone)->delete();
+        }
+
+        return count($gone);
     }
 
     /**
